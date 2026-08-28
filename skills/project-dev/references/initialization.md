@@ -49,6 +49,7 @@ Read and preserve its local conventions. Add only the missing coordination files
 - `protected_paths`: project-relative files or glob patterns that Git must not track.
 - `test_commands`: trusted default verification commands; tasks may add narrower checks.
 - `tdd_policy`: normally `risk-based`; `required` or `disabled` only when the project explicitly chooses it.
+- `workflow_policy`: normally `adaptive`; use `standard` or `strict` only when repository governance requires a minimum mode.
 - `default_branch`: actual integration branch, usually `main`.
 
 If design sync is disabled, record why in the contract body. The status and change-log headings may be `none`, but the configured design document must still exist as a minimal durable baseline.

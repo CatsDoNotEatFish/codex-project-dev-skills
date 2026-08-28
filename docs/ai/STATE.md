@@ -4,8 +4,9 @@ project: codex-project-dev-skills
 stage: public-release
 active_task: none
 status: idle
-last_completed: RELEASE-001
-git_branch: main
+workflow_mode: none
+last_completed: OPT-001
+git_branch: task/opt-001-adaptive-workflow
 git_remote: origin
 push_policy: manual
 updated_at: 2026-08-28
@@ -15,7 +16,7 @@ updated_at: 2026-08-28
 
 ## Current Outcome
 
-Publish and verify `v1.0.0` as the first public release.
+Adaptive low-overhead delivery is implemented and verified locally for the upcoming `v1.1.0` release.
 
 ## Blockers
 
@@ -23,14 +24,15 @@ Publish and verify `v1.0.0` as the first public release.
 
 ## Next Tasks
 
-- Collect real usage feedback before planning `v1.1.0`.
+- Publish `v1.1.0` after explicit push and release authorization.
+- Collect real usage feedback before adding more workflow rules.
 
 ## Verification Baseline
 
 - Skill structure: both Skills passed official validation.
-- Tests: 14 project state and Git lifecycle tests passed.
-- Release: archives and SHA-256 checksums are required before upload.
+- Tests: 20 project state, adaptive workflow, and Git lifecycle tests passed.
+- State checker: strict validation passed on the task branch.
 
 ## Handoff
 
-The repository is idle after `v1.0.0`. Start a new task only for an observed behavior gap or an explicitly requested enhancement.
+The repository is idle after `OPT-001`. The optimized Skills may be installed locally; remote publication remains manual.

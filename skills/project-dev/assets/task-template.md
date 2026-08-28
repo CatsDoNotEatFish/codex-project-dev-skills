@@ -4,6 +4,7 @@ task_id: INIT-001
 stage: discovery
 title: Confirm the first observable project outcome
 status: ready
+workflow_mode: standard
 branch: task/init-001-confirm-baseline
 base_branch: main
 depends_on: []
@@ -14,6 +15,8 @@ impacts: ["documentation", "delivery_status"]
 test_mode: none
 test_reason: Documentation-only bootstrap task with no executable behavior
 tdd_red_verified: false
+design_sync_required: true
+design_sync_reason: Initial project design and delivery status are the task outcome
 acceptance_complete: false
 checks_complete: false
 design_sync_complete: false

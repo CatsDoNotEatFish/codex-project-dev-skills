@@ -21,7 +21,9 @@ def project_config(
     protected_paths: str = '[".env", "private/**"]',
     design_sync: str = "when_affected",
     tdd_policy: str = "risk-based",
+    workflow_policy: str | None = None,
 ) -> str:
+    workflow_line = f"workflow_policy: {workflow_policy}\n" if workflow_policy else ""
     return textwrap.dedent(
         f"""\
         ---
@@ -35,6 +37,7 @@ def project_config(
         protected_paths: {protected_paths}
         test_commands: ["python -m unittest"]
         tdd_policy: {tdd_policy}
+        {workflow_line.rstrip()}
         default_branch: main
         created_at: 2026-08-28
         ---
@@ -50,24 +53,25 @@ def state(
     git_branch: str = "main",
     git_remote: str = "none",
     push_policy: str = "manual",
+    workflow_mode: str | None = None,
+    body: str = "# Current Project State",
 ) -> str:
-    return textwrap.dedent(
-        f"""\
-        ---
-        schema_version: project-dev-state/v1
-        project: sample-project
-        stage: foundation
-        active_task: {active_task}
-        status: {status}
-        last_completed: none
-        git_branch: {git_branch}
-        git_remote: {git_remote}
-        push_policy: {push_policy}
-        updated_at: 2026-08-28
-        ---
-
-        # Current Project State
-        """
+    workflow_line = f"workflow_mode: {workflow_mode}\n" if workflow_mode else ""
+    return (
+        "---\n"
+        "schema_version: project-dev-state/v1\n"
+        "project: sample-project\n"
+        "stage: foundation\n"
+        f"active_task: {active_task}\n"
+        f"status: {status}\n"
+        f"{workflow_line}"
+        "last_completed: none\n"
+        f"git_branch: {git_branch}\n"
+        f"git_remote: {git_remote}\n"
+        f"push_policy: {push_policy}\n"
+        "updated_at: 2026-08-28\n"
+        "---\n\n"
+        f"{body}\n"
     )
 
 
@@ -79,47 +83,53 @@ def task(
     complete: bool = False,
     red_verified: bool = False,
     design_version: str = "pending",
+    workflow_mode: str | None = None,
+    design_sync_required: bool | None = None,
 ) -> str:
     flag = "true" if complete else "false"
     red = "true" if red_verified else "false"
     evidence = "- Focused and regression checks passed." if complete else "- Pending."
     risks = "- No known residual risk." if complete else "- Pending."
-    return textwrap.dedent(
-        f"""\
-        ---
-        schema_version: project-dev-task/v1
-        task_id: {task_id}
-        stage: foundation
-        title: Test task
-        status: {status}
-        branch: task/{task_id.lower()}-test-task
-        base_branch: main
-        depends_on: []
-        design_refs: ["Implementation Status"]
-        allowed_paths: ["src/", "tests/"]
-        forbidden_paths: ["private/"]
-        impacts: {impacts}
-        test_mode: {test_mode}
-        test_reason: Stable observable domain behavior
-        tdd_red_verified: {red}
-        acceptance_complete: {flag}
-        checks_complete: {flag}
-        design_sync_complete: {flag}
-        design_version: {design_version}
-        created_at: 2026-08-28
-        updated_at: 2026-08-28
-        ---
-
-        # {task_id} - Test Task
-
-        ## Delivery Evidence
-
-        {evidence}
-
-        ## Remaining Risks
-
-        {risks}
-        """
+    workflow_line = f"workflow_mode: {workflow_mode}\n" if workflow_mode else ""
+    if design_sync_required is None:
+        design_sync_line = ""
+    else:
+        sync_flag = "true" if design_sync_required else "false"
+        design_sync_line = (
+            f"design_sync_required: {sync_flag}\n"
+            "design_sync_reason: Explicit task-level design impact decision\n"
+        )
+    return (
+        "---\n"
+        "schema_version: project-dev-task/v1\n"
+        f"task_id: {task_id}\n"
+        "stage: foundation\n"
+        "title: Test task\n"
+        f"status: {status}\n"
+        f"{workflow_line}"
+        f"branch: task/{task_id.lower()}-test-task\n"
+        "base_branch: main\n"
+        "depends_on: []\n"
+        'design_refs: ["Implementation Status"]\n'
+        'allowed_paths: ["src/", "tests/"]\n'
+        'forbidden_paths: ["private/"]\n'
+        f"impacts: {impacts}\n"
+        f"test_mode: {test_mode}\n"
+        "test_reason: Stable observable domain behavior\n"
+        f"tdd_red_verified: {red}\n"
+        f"{design_sync_line}"
+        f"acceptance_complete: {flag}\n"
+        f"checks_complete: {flag}\n"
+        f"design_sync_complete: {flag}\n"
+        f"design_version: {design_version}\n"
+        "created_at: 2026-08-28\n"
+        "updated_at: 2026-08-28\n"
+        "---\n\n"
+        f"# {task_id} - Test Task\n\n"
+        "## Delivery Evidence\n\n"
+        f"{evidence}\n\n"
+        "## Remaining Risks\n\n"
+        f"{risks}\n"
     )
 
 
@@ -200,6 +210,103 @@ class CheckProjectStateTests(unittest.TestCase):
         self.assertEqual(0, findings.errors)
         self.assertEqual(0, findings.warnings)
 
+    def test_fast_inline_work_is_recoverable_without_task_card(self) -> None:
+        body = textwrap.dedent(
+            """\
+            # Current Project State
+
+            ## Current Outcome
+
+            Change the settings button label without altering behavior.
+
+            ## Handoff
+
+            Inspect the uncommitted UI diff and run the focused component check.
+            """
+        )
+        self.project.write_state(
+            state(
+                active_task="inline",
+                status="in_progress",
+                workflow_mode="fast",
+                body=body,
+            )
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertEqual(0, findings.warnings)
+
+    def test_fast_inline_work_requires_recovery_summary(self) -> None:
+        self.project.write_state(
+            state(
+                active_task="inline",
+                status="in_progress",
+                workflow_mode="fast",
+            )
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertIn("Current Outcome", self.messages(findings))
+        self.assertIn("Handoff", self.messages(findings))
+
+    def test_inline_work_must_use_fast_mode(self) -> None:
+        body = textwrap.dedent(
+            """\
+            # Current Project State
+
+            ## Current Outcome
+
+            Make one low-risk copy change.
+
+            ## Handoff
+
+            Inspect the current diff.
+            """
+        )
+        self.project.write_state(
+            state(
+                active_task="inline",
+                status="in_progress",
+                workflow_mode="standard",
+                body=body,
+            )
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertIn("inline work requires workflow_mode fast", self.messages(findings))
+
+    def test_project_standard_policy_forbids_fast_inline_work(self) -> None:
+        self.project.write_config(project_config(workflow_policy="standard"))
+        body = textwrap.dedent(
+            """\
+            # Current Project State
+
+            ## Current Outcome
+
+            Make one low-risk copy change.
+
+            ## Handoff
+
+            Inspect the current diff.
+            """
+        )
+        self.project.write_state(
+            state(
+                active_task="inline",
+                status="in_progress",
+                workflow_mode="fast",
+                body=body,
+            )
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertIn("workflow_policy forbids fast mode", self.messages(findings))
+
     def test_state_and_task_status_mismatch_fails(self) -> None:
         self.project.write_state(
             state(status="in_progress", git_branch="task/app-001-test-task")
@@ -247,6 +354,41 @@ class CheckProjectStateTests(unittest.TestCase):
         findings = MODULE.validate_project(self.project.root)
 
         self.assertEqual(0, findings.errors)
+
+    def test_explicit_no_design_change_avoids_document_churn(self) -> None:
+        self.project.write_state(state(active_task="none", status="idle"))
+        self.project.write_task(
+            "APP-001",
+            task(
+                status="done",
+                complete=True,
+                red_verified=True,
+                workflow_mode="standard",
+                design_sync_required=False,
+                design_version="not-required",
+            ),
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+
+    def test_state_and_task_workflow_modes_must_match(self) -> None:
+        self.project.write_state(
+            state(
+                status="in_progress",
+                git_branch="task/app-001-test-task",
+                workflow_mode="strict",
+            )
+        )
+        self.project.write_task(
+            "APP-001",
+            task(status="in_progress", workflow_mode="standard"),
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertIn("workflow mode mismatch", self.messages(findings))
 
     def test_done_tdd_task_without_red_evidence_fails(self) -> None:
         self.project.write_state(state(active_task="none", status="idle"))

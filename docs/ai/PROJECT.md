@@ -9,6 +9,7 @@ changelog_heading: Change Log
 protected_paths: [".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "dist/**"]
 test_commands: ["python -B -m unittest discover -s skills/project-dev/tests -p test_*.py -v"]
 tdd_policy: risk-based
+workflow_policy: adaptive
 default_branch: main
 created_at: 2026-08-28
 ---
@@ -25,6 +26,7 @@ Publish a compact, reusable pair of Codex Skills for durable project coordinatio
 - Keep TDD optional and risk-driven.
 - Preserve authorization boundaries for remote Git operations and destructive recovery.
 - Keep ordinary user interaction simple even when repository evidence is detailed.
+- Apply only the workflow rigor justified by failure impact and recovery needs.
 
 ## Data And Safety
 
