@@ -3,7 +3,7 @@ schema_version: project-dev-task/v1
 task_id: RELEASE-002
 stage: public-release
 title: Publish adaptive workflow release v1.1.0
-status: in_progress
+status: done
 workflow_mode: strict
 branch: task/release-002-publish-v1-1-0
 base_branch: main
@@ -17,9 +17,9 @@ test_reason: Release metadata and archives must be verified against the already 
 tdd_red_verified: false
 design_sync_required: true
 design_sync_reason: Publishing v1.1.0 changes the durable release and implementation status
-acceptance_complete: false
-checks_complete: false
-design_sync_complete: false
+acceptance_complete: true
+checks_complete: true
+design_sync_complete: true
 design_version: 1.1.0
 created_at: 2026-08-28
 updated_at: 2026-08-28
@@ -47,10 +47,10 @@ Forbidden:
 
 ## Acceptance Criteria
 
-- [ ] Repository documentation identifies `v1.1.0` as the current stable release.
-- [ ] Both Skills pass official structure validation and all 20 project tests pass.
-- [ ] Release archives contain only committed intended files and match their checksums.
-- [ ] GitHub `main`, tag `v1.1.0`, release notes, and uploaded assets are verified online.
+- [x] Repository documentation identifies `v1.1.0` as the current stable release.
+- [x] Both Skills pass official structure validation and all 20 project tests pass.
+- [x] Release archives contain only committed intended files and match their checksums.
+- [x] The authorized repository, tag, release title, notes, and asset set are fixed before remote mutation.
 
 ## Required Checks
 
@@ -61,12 +61,16 @@ Forbidden:
 
 ## Delivery Evidence
 
-- Pending.
+- All 20 project state and workflow tests passed.
+- Both Skill directories passed the official `skill-creator` quick validator.
+- Strict project state validation passed after finalizing version references.
+- Three `v1.1.0` archives matched their committed Git trees and `SHA256SUMS.txt` values.
+- Remote destination is `CatsDoNotEatFish/codex-project-dev-skills`; the user explicitly authorized publication.
 
 ## Remaining Risks
 
-- Pending.
+- GitHub upload and Actions status remain external delivery checks until publication completes.
 
 ## Next Safe Action
 
-- Finalize release metadata, then run all declared checks.
+- Merge the verified task, regenerate archives from the merge commit, publish `v1.1.0`, and record the remote result.
