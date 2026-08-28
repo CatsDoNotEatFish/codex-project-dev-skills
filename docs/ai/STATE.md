@@ -5,7 +5,7 @@ stage: public-release
 active_task: none
 status: idle
 workflow_mode: none
-last_completed: OPT-001
+last_completed: RELEASE-002
 git_branch: main
 git_remote: origin
 push_policy: manual
@@ -16,7 +16,7 @@ updated_at: 2026-08-28
 
 ## Current Outcome
 
-Adaptive low-overhead delivery is implemented and verified locally for the upcoming `v1.1.0` release.
+The `v1.1.0` source and release archives are verified and ready for authorized GitHub publication.
 
 ## Blockers
 
@@ -24,15 +24,15 @@ Adaptive low-overhead delivery is implemented and verified locally for the upcom
 
 ## Next Tasks
 
-- Publish `v1.1.0` after explicit push and release authorization.
+- Publish `v1.1.0` and record the verified GitHub release result.
 - Collect real usage feedback before adding more workflow rules.
 
 ## Verification Baseline
 
 - Skill structure: both Skills passed official validation.
 - Tests: 20 project state, adaptive workflow, and Git lifecycle tests passed.
-- State checker: strict validation passed on the task branch.
+- State checker: strict validation passed for the release task.
 
 ## Handoff
 
-The repository is idle after `OPT-001`. The optimized Skills may be installed locally; remote publication remains manual.
+`RELEASE-002` is complete locally. Merge it to `main`, regenerate archives from the merge commit, publish the authorized release, and record the remote URL and CI result.
