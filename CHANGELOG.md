@@ -4,6 +4,8 @@ All notable changes to this repository are recorded here.
 
 ## Unreleased
 
+## 1.1.0 - 2026-08-28
+
 ### Changed
 
 - Added adaptive `fast`, `standard`, and `strict` project delivery modes.

@@ -167,11 +167,11 @@ skills/
 python -B -m unittest discover -s skills/project-dev/tests -p "test_*.py" -v
 ```
 
-当前开发版包含 20 项状态、任务、自适应模式、TDD、Git、安全路径和空项目基线测试。
+当前版本包含 20 项状态、任务、自适应模式、TDD、Git、安全路径和空项目基线测试。
 
 ## 版本
 
-当前稳定版本：`v1.0.0`。自适应低开销工作流正在 `1.1.0` 开发记录中。
+当前稳定版本：`v1.1.0`，包含自适应低开销工作流和兼容旧版协调文件的升级路径。
 
 详细内容见 [CHANGELOG.md](CHANGELOG.md) 和 [GitHub Releases](https://github.com/CatsDoNotEatFish/codex-project-dev-skills/releases)。
 

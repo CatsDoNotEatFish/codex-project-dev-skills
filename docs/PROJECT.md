@@ -1,6 +1,6 @@
 # Codex Project Dev Skills Design
 
-Version: 1.1.0-dev
+Version: 1.1.0
 
 Last updated: 2026-08-28
 
@@ -42,7 +42,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 
 ## Implementation Status
 
-- `v1.1.0` adaptive workflow implementation and local validation are in progress.
+- `v1.1.0` adaptive workflow implementation and validation are complete.
 
 ## Decisions And Assumptions
 
@@ -53,7 +53,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 
 ## Change Log
 
-### 1.1.0-dev - 2026-08-28
+### 1.1.0 - 2026-08-28
 
 - Added adaptive fast, standard, and strict workflows while preserving v1 compatibility.
 - Added inline fast-state recovery and explicit design synchronization decisions.
