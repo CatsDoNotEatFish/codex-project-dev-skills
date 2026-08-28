@@ -2,6 +2,22 @@
 
 All notable changes to this repository are recorded here.
 
+## Unreleased
+
+### Changed
+
+- Added adaptive `fast`, `standard`, and `strict` project delivery modes.
+- Fast work can use recoverable inline state without a task card or dedicated branch.
+- Design synchronization is now an explicit task decision; ordinary implementation no longer churns the design document by default.
+- Reduced repeated state transitions, full-context reads, test runs, checkpoints, and progress narration.
+- Standard work now uses focused tests and one completion update; full gates are reserved for strict risk.
+- TDD guidance now uses compact cycles and runs broader regression checks once after a coherent implementation.
+
+### Compatibility
+
+- Existing `project-dev` v1 project, state, and task files remain valid.
+- New adaptive fields are optional and default legacy tasks to standard behavior.
+
 ## 1.0.0 - 2026-08-28
 
 First public release.

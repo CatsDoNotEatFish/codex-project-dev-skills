@@ -9,6 +9,7 @@ changelog_heading: Change Log
 protected_paths: [".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "*.db", "*.sqlite", "*.sqlite3", "logs/**", "backups/**"]
 test_commands: []
 tdd_policy: risk-based
+workflow_policy: adaptive
 default_branch: main
 created_at: replace-with-current-date
 ---
@@ -33,3 +34,7 @@ Record the project identity and the smallest useful product outcome.
 - Required automated and manual checks pass.
 - Design and status records match the implementation.
 - Git history contains only intentional, reviewable project changes.
+
+## Workflow Policy
+
+- Use fast for low-risk single-session work, standard for ordinary features, and strict only for high-risk delivery.

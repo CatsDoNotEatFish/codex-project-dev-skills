@@ -1,4 +1,4 @@
 interface:
   display_name: "TDD Workflow"
-  short_description: "Drive stable behavior through verified test-first cycles"
+  short_description: "Drive stable behavior through compact test-first cycles"
   default_prompt: "Use $tdd-workflow to implement this behavior with a verified red-green-refactor cycle."

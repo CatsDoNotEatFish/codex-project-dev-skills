@@ -4,6 +4,7 @@ project: replace-with-project-id
 stage: discovery
 active_task: INIT-001
 status: ready
+workflow_mode: standard
 last_completed: none
 git_branch: main
 git_remote: none

@@ -4,6 +4,8 @@
 
 This repository publishes two reusable Codex Skills under `skills/`. Keep the Skills generic; project-specific product rules belong in each consuming project's `AGENTS.md` and `docs/ai/PROJECT.md`.
 
+Use adaptive rigor: fast for low-risk inline work, standard for ordinary delivery, and strict only when failure impact or repository policy requires full gates.
+
 ## Required Synchronization
 
 When Skill behavior changes, update the affected `SKILL.md`, supporting references or scripts, root `README.md`, `CHANGELOG.md`, `docs/PROJECT.md`, `docs/ai/STATE.md`, and the active task card in the same delivery.

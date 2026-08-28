@@ -22,6 +22,8 @@ PROJECT_TYPES = {"greenfield", "existing", "governed"}
 DESIGN_SYNC_MODES = {"always", "when_affected", "disabled"}
 TDD_POLICIES = {"risk-based", "required", "disabled"}
 TEST_MODES = {"tdd", "mixed", "test-after", "exploratory", "none"}
+WORKFLOW_MODES = {"fast", "standard", "strict"}
+WORKFLOW_POLICIES = {"adaptive", "standard", "strict"}
 IMPACTS = {
     "data",
     "api",
@@ -323,6 +325,9 @@ def validate_config(
         findings.error("docs/ai/PROJECT.md: invalid design_sync")
     if config["tdd_policy"] not in TDD_POLICIES:
         findings.error("docs/ai/PROJECT.md: invalid tdd_policy")
+    workflow_policy = str(config.get("workflow_policy", "adaptive"))
+    if workflow_policy not in WORKFLOW_POLICIES:
+        findings.error("docs/ai/PROJECT.md: invalid workflow_policy")
     validate_date(config["created_at"], "docs/ai/PROJECT.md: created_at", findings)
 
     for field in ("protected_paths", "test_commands"):
@@ -389,6 +394,15 @@ def validate_task(
     if status not in TASK_STATUSES:
         findings.error(f"{label}: invalid status {status!r}")
 
+    workflow_mode = str(data.get("workflow_mode", "standard"))
+    if workflow_mode not in WORKFLOW_MODES:
+        findings.error(f"{label}: invalid workflow_mode {workflow_mode!r}")
+    workflow_policy = str(config.get("workflow_policy", "adaptive"))
+    if workflow_policy == "strict" and workflow_mode != "strict":
+        findings.error(f"{label}: project workflow_policy requires strict mode")
+    if workflow_policy == "standard" and workflow_mode == "fast":
+        findings.error(f"{label}: project workflow_policy forbids fast mode")
+
     branch = str(data["branch"])
     if not re.fullmatch(r"task/[a-z0-9][a-z0-9._/-]*", branch):
         findings.error(f"{label}: invalid task branch {branch!r}")
@@ -441,6 +455,14 @@ def validate_task(
         if not isinstance(data[field], bool):
             findings.error(f"{label}: {field} must be true or false")
 
+    if "design_sync_required" in data:
+        if not isinstance(data["design_sync_required"], bool):
+            findings.error(f"{label}: design_sync_required must be true or false")
+        if not str(data.get("design_sync_reason", "")).strip():
+            findings.error(
+                f"{label}: explicit design_sync_required needs design_sync_reason"
+            )
+
     validate_date(data["created_at"], f"{label}: created_at", findings)
     validate_date(data["updated_at"], f"{label}: updated_at", findings)
 
@@ -460,9 +482,15 @@ def validate_task(
             findings.error(f"{label}: done task requires a Remaining Risks assessment")
 
         governed = bool(impacts) and impacts != ["none"]
-        sync_needed = config["design_sync"] == "always" or (
-            config["design_sync"] == "when_affected" and governed
-        )
+        if config["design_sync"] == "always":
+            sync_needed = True
+        elif config["design_sync"] == "disabled":
+            sync_needed = False
+        elif "design_sync_required" in data:
+            sync_needed = data["design_sync_required"] is True
+        else:
+            # Legacy v1 cards keep their original conservative behavior.
+            sync_needed = governed
         if sync_needed:
             if data["design_sync_complete"] is not True:
                 findings.error(f"{label}: task requires design_sync_complete: true")
@@ -505,7 +533,7 @@ def validate_project(project: Path) -> Findings:
     validate_git(project, protected_patterns, findings)
 
     try:
-        state, _ = read_frontmatter(state_path)
+        state, state_body = read_frontmatter(state_path)
     except (OSError, UnicodeError, ValueError) as exc:
         findings.error(f"docs/ai/STATE.md: {exc}")
         return findings
@@ -525,6 +553,14 @@ def validate_project(project: Path) -> Findings:
     if state_status not in ACTIVE_STATUSES | {"idle"}:
         findings.error(f"docs/ai/STATE.md: invalid status {state_status!r}")
     validate_date(state["updated_at"], "docs/ai/STATE.md: updated_at", findings)
+
+    active_task = str(state["active_task"])
+    default_state_mode = "none" if active_task == "none" else "standard"
+    state_workflow_mode = str(state.get("workflow_mode", default_state_mode))
+    if state_workflow_mode not in WORKFLOW_MODES | {"none"}:
+        findings.error(
+            f"docs/ai/STATE.md: invalid workflow_mode {state_workflow_mode!r}"
+        )
 
     git_branch = str(state["git_branch"])
     git_remote = str(state["git_remote"])
@@ -590,15 +626,35 @@ def validate_project(project: Path) -> Findings:
             ):
                 findings.error(f"{task_id}: dependency {dependency} is not done")
 
-    active_task = str(state["active_task"])
     if active_task == "none":
         if state_status != "idle":
             findings.error("docs/ai/STATE.md: active_task none requires status idle")
+        if state_workflow_mode != "none":
+            findings.error(
+                "docs/ai/STATE.md: idle state requires workflow_mode none"
+            )
         if active_cards:
             findings.error(
                 "docs/ai/STATE.md: active_task none conflicts with active cards: "
                 + ", ".join(active_cards)
             )
+    elif active_task == "inline":
+        if state_status not in ACTIVE_STATUSES:
+            findings.error("docs/ai/STATE.md: inline work requires an active status")
+        if state_workflow_mode != "fast":
+            findings.error("docs/ai/STATE.md: inline work requires workflow_mode fast")
+        if str(config.get("workflow_policy", "adaptive")) != "adaptive":
+            findings.error("docs/ai/STATE.md: project workflow_policy forbids fast mode")
+        if active_cards:
+            findings.error(
+                "docs/ai/STATE.md: inline work conflicts with active cards: "
+                + ", ".join(active_cards)
+            )
+        for heading in ("Current Outcome", "Handoff"):
+            if not meaningful_section(state_body, heading):
+                findings.error(
+                    f"docs/ai/STATE.md: inline work requires meaningful {heading}"
+                )
     else:
         if active_task not in tasks:
             findings.error(f"active task card not found: {active_task}.md")
@@ -610,6 +666,15 @@ def validate_project(project: Path) -> Findings:
                     f"{active_task}.md={task_status}"
                 )
             task_branch = str(tasks[active_task].get("branch"))
+            task_workflow_mode = str(
+                tasks[active_task].get("workflow_mode", "standard")
+            )
+            if state_workflow_mode != task_workflow_mode:
+                findings.error(
+                    "workflow mode mismatch: "
+                    f"STATE.md={state_workflow_mode}, "
+                    f"{active_task}.md={task_workflow_mode}"
+                )
             if state_status != "ready" and git_branch != task_branch:
                 findings.error(
                     f"branch mismatch: STATE.md={git_branch}, "
@@ -621,7 +686,7 @@ def validate_project(project: Path) -> Findings:
                 + (", ".join(active_cards) if active_cards else "none")
             )
 
-    if not task_paths:
+    if not task_paths and active_task != "inline":
         findings.warn("no task cards found under docs/ai/tasks")
 
     return findings

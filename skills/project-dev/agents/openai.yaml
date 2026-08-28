@@ -1,4 +1,4 @@
 interface:
   display_name: "Project Dev"
-  short_description: "Continue projects with durable state and safe Git delivery"
-  default_prompt: "Use $project-dev to initialize or continue this project from repository state."
+  short_description: "Continue projects with adaptive rigor and durable state"
+  default_prompt: "Use $project-dev to initialize or continue this project with the lightest safe workflow."

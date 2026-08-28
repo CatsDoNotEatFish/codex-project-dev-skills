@@ -1,105 +1,82 @@
 ---
 name: project-dev
-description: Initialize, adopt, resume, and deliver software projects across disposable Codex sessions using repository state, bounded task cards, safe Git checkpoints, configurable design-document gates, and risk-based testing. Use for ongoing project development or recovery, including empty projects and undocumented existing codebases. Do not use for one-off coding questions outside a maintained project.
+description: Initialize, adopt, resume, and deliver software projects across disposable Codex sessions using adaptive workflow rigor, repository state, safe Git checkpoints, and risk-based testing. Use for ongoing project development or recovery, including empty projects and undocumented codebases. Do not use for one-off coding questions outside a maintained project.
 ---
 
 # Project Dev
 
-Keep conversations disposable and the repository durable. Recover current work from project files, execute one bounded outcome, verify it, and leave evidence another session can trust.
+Keep conversations disposable and the repository durable without turning every change into a ceremony. Recover from repository evidence, choose rigor proportional to risk, deliver one clear outcome, and leave only the state needed by the next session.
 
 ## Sources Of Truth
 
-Use these sources in descending scope:
+Use these sources in order:
 
 1. Applicable `AGENTS.md` files define project-local rules and permissions.
-2. `docs/ai/PROJECT.md` identifies the design baseline, protected paths, testing policy, and delivery conventions.
-3. The configured design document records architecture, product decisions, roadmap, and implementation status.
-4. `docs/ai/STATE.md` is the sole current coordination state.
-5. The active task card is the current delivery contract.
+2. `docs/ai/PROJECT.md` identifies the design baseline, protected paths, workflow policy, testing policy, and delivery conventions.
+3. The configured design document records durable architecture and product decisions.
+4. `docs/ai/STATE.md` records current coordination state.
+5. An active task card, when required, defines the delivery contract.
 6. Git state and executed checks are implementation evidence.
 
-Conversation history is never project state. When sources disagree, freeze new edits and reconcile the narrowest stale source from repository evidence.
+Conversation history is not project state. Preserve unrelated user changes and reconcile contradictions from repository evidence.
 
-## Select A Mode
+## Start With Minimum Context
 
-- **Bootstrap**: Turn an empty project idea into a reviewed design baseline and first delivery task.
-- **Adopt**: Establish an as-is baseline for existing code with missing or incomplete governance.
-- **Resume**: Continue the active task from repository evidence.
-- **Plan**: Define or revise one observable task without implementing when planning is requested.
-- **Implement**: Deliver the active task within its declared scope.
-- **Review**: Inspect changes and evidence without fixing unless changes were requested.
-- **Recover**: Reconcile interrupted, missing, stale, or conflicting state.
+1. Find the project root and read applicable `AGENTS.md` instructions.
+2. Inspect the current Git branch and worktree.
+3. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md`.
+4. If coordination files are missing, classify the project and read [references/initialization.md](references/initialization.md).
+5. If state points to `inline`, recover from its outcome, handoff, branch, and worktree diff. If it points to a task ID, read only that card, its design references, and relevant implementation files.
+6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check.
 
-For Bootstrap or Adopt, read [references/initialization.md](references/initialization.md) and [references/git-workflow.md](references/git-workflow.md). Use the templates only while creating the corresponding project files.
+Do not read all design history, completed cards, raw data, or unrelated modules by default.
 
-## Start Every Project Operation
+## Choose Workflow Rigor
 
-1. Find the project root and read all applicable `AGENTS.md` instructions.
-2. Inspect Git status, branch, worktree, remotes, and upstream before relying on recorded state.
-3. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md`. If either is missing, enter Bootstrap or Adopt rather than guessing progress.
-4. Run `python <skill-dir>/scripts/check_project_state.py --project <repo>` after the coordination files exist.
-5. Read only the active task card, its `design_refs`, and files needed for the requested outcome.
-6. Enter Recover when config, state, task, branch, worktree, or executable evidence disagree.
+Read [references/workflow-modes.md](references/workflow-modes.md) once when classifying a new outcome. Use the lightest safe mode and escalate when scope or risk grows.
 
-Do not load the full design history, every completed card, raw data, or unrelated modules by default.
+- **Fast**: a low-risk, narrow change expected to finish in one session. Record it inline in `STATE.md`; do not create a task card or task branch.
+- **Standard**: the default for ordinary features and fixes. Use one compact card, one short branch, focused checks, and one completion update.
+- **Strict**: data migrations, security/privacy/auth, money, destructive or irreversible behavior, breaking contracts, releases/deployments, or broad cross-cutting changes. Use full gates.
 
-## Initialize Or Adopt
+Project policy or explicit user direction may require stricter handling. Never use `fast` merely because the user values speed when a failure could lose data, expose information, or break a published contract.
 
-Classify the repository from evidence, not the user's vocabulary:
+## Work Efficiently
 
-- empty or nearly empty: Bootstrap from the product brief;
-- meaningful source code but no trustworthy design baseline: Adopt and document the current implementation before changing it;
-- existing governance: preserve its conventions and add only missing coordination files.
+Before editing, confirm the requested outcome and protected boundaries. Then follow the selected mode:
 
-Initialization may create local project files, run `git init`, and create a safe local baseline commit when the user asks this Skill to initialize or take over the project. It does not authorize inventing a remote, pushing, releasing, deploying, or committing secrets and runtime data.
+- write coordination state once before implementation and once at completion; do not cycle through administrative statuses;
+- group routine commands and checks instead of narrating every internal gate;
+- ask the user only for product decisions, missing external authorization, destructive choices, or semantic conflicts;
+- run focused checks after relevant changes and broader checks once at completion when the blast radius justifies them;
+- do not rerun an unchanged check merely to produce another receipt;
+- create checkpoints only when work will cross sessions, a coherent partial slice exists, or recovery risk materially increases;
+- update the design document only when architecture, contracts, durable workflows, project rules, roadmap, or milestone status actually changes.
 
-For a blank project, resolve only decisions that materially change product scope, platform, data sensitivity, or architecture. Record reasonable assumptions explicitly. Create a design-confirmation task and do not begin broad feature development while pivotal decisions remain unresolved.
+For standard or strict work, create a card from [assets/task-template.md](assets/task-template.md). Record `workflow_mode`, test mode, a concrete test reason, and an explicit `design_sync_required` decision with its reason. Keep future cards `planned` and only one active delivery task.
 
-## Plan One Bounded Task
+Read [references/testing-strategy.md](references/testing-strategy.md) when executable behavior changes. Use `$tdd-workflow` only for `tdd` or the test-first portion of `mixed`; ordinary work does not gain value from performative Red-Green-Refactor.
 
-Create `docs/ai/tasks/<task_id>.md` from [assets/task-template.md](assets/task-template.md). Define one observable goal, allowed and forbidden scope, dependencies, acceptance cases, exact checks, documentation impacts, and delivery evidence.
+Read [references/git-workflow.md](references/git-workflow.md) only before initialization, branch or commit decisions, synchronization, integration, conflict recovery, or cleanup.
 
-Use only these impact values:
+## Preserve Cross-Session Recovery
 
-`data`, `api`, `domain`, `security_privacy`, `ui`, `operations`, `dependencies`, `architecture`, `documentation`, `delivery_status`, or `none`.
+For fast work, set `active_task: inline`, `workflow_mode: fast`, an active status, a concrete Current Outcome, and a useful Handoff before editing. The Git diff plus this short state is sufficient for another session. Complete the change with a focused check, one local commit, and reset state to idle.
 
-Do not combine `none` with another impact. Any non-`none` impact follows the design-sync policy in `docs/ai/PROJECT.md`.
+For standard or strict work, the task card, branch, commits, and evidence carry progress. If the user says “save progress” or a session must end mid-task, create one coherent checkpoint when possible and update the handoff with completed work, remaining work, and the last trusted check.
 
-Choose `test_mode` by reading [references/testing-strategy.md](references/testing-strategy.md) whenever behavior changes. Allowed modes are `tdd`, `mixed`, `test-after`, `exploratory`, and `none`. Record a concrete `test_reason`; do not select TDD by habit or avoid it merely for speed.
+If fast work expands, becomes risky, or will span multiple sessions, convert `inline` state into a standard or strict task card before continuing. Never discard or rewrite the existing diff during conversion.
 
-Use `$tdd-workflow` when it is installed and the task mode is `tdd`, or for the test-first slice of `mixed`. Otherwise preserve the same essential evidence: observe the new test fail for the intended reason before implementation, make it pass with the smallest coherent change, then refactor under passing tests.
+## Complete
 
-Keep one active delivery task. Future cards remain `planned`; finishing one task does not authorize starting the next.
+A change is complete when observable acceptance passes, required checks pass, required design synchronization is done, and no blocker remains.
 
-## Implement Safely
+- Fast: reset state to `active_task: none`, `status: idle`, `workflow_mode: none`; commit the intentional change on the permitted current branch.
+- Standard: update card and state once, run the checker, commit the verified task, merge the short branch, and follow push policy.
+- Strict: run all declared gates and integration checks before completion or external delivery.
 
-Before editing, confirm that the user requested a change, the active card matches it, dependencies are complete, and intended paths fit the declared scope. Revise the task contract first when scope genuinely changes.
+Do not start the next task automatically. Report the workflow mode, outcome, branch/commit, checks, design sync decision, remote status, residual risk, and next safe action in a concise handoff.
 
-Read [references/git-workflow.md](references/git-workflow.md) before branch creation, commits, synchronization, integration, conflict recovery, or branch cleanup.
+## Recover
 
-- create or resume the task branch before implementation;
-- preserve unrelated user changes and project-specific protected data;
-- prefer a small vertical slice that remains runnable and reviewable;
-- do not expand into speculative future infrastructure;
-- keep project state updates in the main session unless the user explicitly requests parallel agents.
-
-## Verify And Complete
-
-Set the task to `verifying`, then execute every Required Check and test the risk-bearing behavior. File existence alone is not acceptance evidence.
-
-When design sync is required by `docs/ai/PROJECT.md`:
-
-- revise affected design sections to match actual behavior;
-- update the configured implementation-status and change-log sections;
-- update the document version/date when that document uses them;
-- record the resulting identifier in `design_version`.
-
-A task may become `done` only when acceptance and required checks pass, required documentation is synchronized, TDD red-step evidence exists when applicable, and no blocker remains. Otherwise use `blocked` or `needs_review` with the exact next safe action.
-
-After completion, commit verified task state on its task branch, integrate through the Git gate, follow `push_policy`, set `active_task: none`, and leave the project `idle` unless the user explicitly authorized another task.
-
-## Recover And Handoff
-
-Recovery preserves evidence. Do not automatically stash, discard, reset, rewrite, or choose one side of a semantic conflict. Compare config, state, cards, design, branches, history, worktree, remotes, and executable checks; repair only facts supported by evidence.
-
-Report the mode, task and status, branch, local and merge commits, remote synchronization, changed files, check outcomes, design version, blockers, assumptions requiring review, and the next safe action.
+Freeze new edits when state, cards, worktree, branches, or design facts conflict. Preserve all evidence; do not auto-stash, hard-reset, discard changes, rewrite history, or choose one side of a semantic conflict. Repair only facts supported by the repository, then resume with the appropriate mode.
