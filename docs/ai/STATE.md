@@ -16,7 +16,7 @@ updated_at: 2026-08-28
 
 ## Current Outcome
 
-The `v1.1.0` source and release archives are verified and ready for authorized GitHub publication.
+`v1.1.0` is published with verified archives, checksums, tag provenance, and a successful GitHub Actions run.
 
 ## Blockers
 
@@ -24,7 +24,6 @@ The `v1.1.0` source and release archives are verified and ready for authorized G
 
 ## Next Tasks
 
-- Publish `v1.1.0` and record the verified GitHub release result.
 - Collect real usage feedback before adding more workflow rules.
 
 ## Verification Baseline
@@ -32,7 +31,9 @@ The `v1.1.0` source and release archives are verified and ready for authorized G
 - Skill structure: both Skills passed official validation.
 - Tests: 20 project state, adaptive workflow, and Git lifecycle tests passed.
 - State checker: strict validation passed for the release task.
+- GitHub Actions: `Validate Skills` run `33171027728` passed for commit `2ebcd0f`.
+- Release: `v1.1.0` is public with four uploaded assets whose GitHub digests match the local files.
 
 ## Handoff
 
-`RELEASE-002` is complete locally. Merge it to `main`, regenerate archives from the merge commit, publish the authorized release, and record the remote URL and CI result.
+`v1.1.0` is published at https://github.com/CatsDoNotEatFish/codex-project-dev-skills/releases/tag/v1.1.0. No delivery task is active; collect observed usage failures before planning another workflow change.

@@ -66,11 +66,14 @@ Forbidden:
 - Strict project state validation passed after finalizing version references.
 - Three `v1.1.0` archives matched their committed Git trees and `SHA256SUMS.txt` values.
 - Remote destination is `CatsDoNotEatFish/codex-project-dev-skills`; the user explicitly authorized publication.
+- Tag `v1.1.0` resolves to merge commit `2ebcd0f76f7e61b4829c2df6caca234225c35aa6`.
+- GitHub release https://github.com/CatsDoNotEatFish/codex-project-dev-skills/releases/tag/v1.1.0 is public with all four assets uploaded and matching local digests.
+- GitHub Actions `Validate Skills` run `33171027728` completed successfully for the tagged commit.
 
 ## Remaining Risks
 
-- GitHub upload and Actions status remain external delivery checks until publication completes.
+- Real usage may reveal additional opportunities to reduce coordination cost without weakening recovery.
 
 ## Next Safe Action
 
-- Merge the verified task, regenerate archives from the merge commit, publish `v1.1.0`, and record the remote result.
+- Collect observed usage failures before planning the next version.

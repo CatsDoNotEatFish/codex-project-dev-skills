@@ -42,7 +42,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 
 ## Implementation Status
 
-- `v1.1.0` adaptive workflow implementation and validation are complete.
+- `v1.1.0` adaptive workflow implementation is published and validated on GitHub.
 
 ## Decisions And Assumptions
 
