@@ -1,0 +1,26 @@
+name: Validate Skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify Skill entrypoints
+        run: |
+          test -f skills/project-dev/SKILL.md
+          test -f skills/tdd-workflow/SKILL.md
+          grep -q '^name: project-dev$' skills/project-dev/SKILL.md
+          grep -q '^name: tdd-workflow$' skills/tdd-workflow/SKILL.md
+      - name: Run project state tests
+        run: python -B -m unittest discover -s skills/project-dev/tests -p "test_*.py" -v
