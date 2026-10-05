@@ -85,6 +85,7 @@ def task(
     design_version: str = "pending",
     workflow_mode: str | None = None,
     design_sync_required: bool | None = None,
+    schema_version: str = "project-dev-task/v1",
 ) -> str:
     flag = "true" if complete else "false"
     red = "true" if red_verified else "false"
@@ -101,7 +102,7 @@ def task(
         )
     return (
         "---\n"
-        "schema_version: project-dev-task/v1\n"
+        f"schema_version: {schema_version}\n"
         f"task_id: {task_id}\n"
         "stage: foundation\n"
         "title: Test task\n"
@@ -185,6 +186,33 @@ class ProjectFixture:
             + f"\n### {version} - 2026-08-28\n\n- Test delivery.\n",
             encoding="utf-8",
         )
+
+    def git(self, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", "-C", str(self.root), *args],
+            check=check,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            encoding="utf-8",
+        )
+
+    def commit(self, message: str = "chore(init): establish baseline") -> None:
+        self.git("add", "-A")
+        self.git(
+            "-c",
+            "user.name=Skill Test",
+            "-c",
+            "user.email=skill-test@example.invalid",
+            "commit",
+            "-m",
+            message,
+        )
+
+    def write(self, relative: str, text: str = "value = 1\n") -> None:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
 
     def close(self) -> None:
         self.temp.cleanup()
@@ -529,6 +557,235 @@ class CheckProjectStateTests(unittest.TestCase):
         self.assertIn("docs/ai/PROJECT.md", tracked)
         self.assertIn("docs/ai/STATE.md", tracked)
         self.assertNotIn(".env", tracked)
+
+
+class RealityGateTests(unittest.TestCase):
+    """The checker reconciles the documents against the repository, not only each other."""
+
+    TASK_BRANCH = "task/app-001-test-task"
+
+    def setUp(self) -> None:
+        self.project = ProjectFixture()
+
+    def tearDown(self) -> None:
+        self.project.close()
+
+    @staticmethod
+    def messages(findings: object) -> str:
+        return "\n".join(item.message for item in findings.items)
+
+    def active_task(self) -> None:
+        """One baseline commit, then on the task branch that state and card declare."""
+        self.project.write_state(
+            state(
+                status="in_progress",
+                git_branch=self.TASK_BRANCH,
+                workflow_mode="standard",
+            )
+        )
+        self.project.write_task(
+            "APP-001", task(status="in_progress", workflow_mode="standard")
+        )
+        self.project.commit()
+        self.project.git("switch", "-c", self.TASK_BRANCH)
+
+    def test_change_outside_allowed_paths_is_flagged(self) -> None:
+        self.active_task()
+        self.project.write("src/feature.py")
+        self.project.write("reporting/rogue.py")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertIn(
+            "outside allowed_paths: reporting/rogue.py", self.messages(findings)
+        )
+        self.assertNotIn("src/feature.py", self.messages(findings))
+
+    def test_change_inside_forbidden_paths_is_an_error(self) -> None:
+        self.active_task()
+        self.project.write("private/secret.py")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertGreaterEqual(findings.errors, 1)
+        self.assertIn(
+            "touches forbidden path private/secret.py", self.messages(findings)
+        )
+
+    def test_coordination_changes_do_not_trip_the_scope_gate(self) -> None:
+        self.active_task()
+        self.project.write_state(
+            state(
+                status="in_progress",
+                git_branch=self.TASK_BRANCH,
+                workflow_mode="standard",
+            )
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertNotIn("outside allowed_paths", self.messages(findings))
+        self.assertEqual(0, findings.errors)
+
+    def test_scope_gate_is_silent_without_a_baseline(self) -> None:
+        # No commit exists yet, so every file is new and nothing is out of scope.
+        self.project.write_state(state())
+        self.project.write_task("APP-001", task())
+        self.project.write("anything/at/all.py")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertEqual(0, findings.warnings)
+
+    def test_state_branch_must_match_the_checked_out_branch(self) -> None:
+        self.project.commit()
+        self.project.write_state(
+            state(
+                status="in_progress",
+                git_branch=self.TASK_BRANCH,
+                workflow_mode="standard",
+            )
+        )
+        self.project.write_task(
+            "APP-001", task(status="in_progress", workflow_mode="standard")
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertGreaterEqual(findings.errors, 1)
+        self.assertIn(
+            "does not match the checked-out branch 'main'", self.messages(findings)
+        )
+
+    def test_idle_branch_mismatch_warns_without_failing(self) -> None:
+        body = textwrap.dedent(
+            """\
+            # Current Project State
+
+            ## Current Outcome
+
+            Rename the settings button without altering behavior.
+
+            ## Handoff
+
+            Inspect the uncommitted UI diff.
+            """
+        )
+        self.project.commit()
+        self.project.write_state(
+            state(
+                active_task="inline",
+                status="in_progress",
+                workflow_mode="fast",
+                git_branch="task/elsewhere",
+                body=body,
+            )
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertIn(
+            "does not match the checked-out branch 'main'", self.messages(findings)
+        )
+
+    def test_completed_tdd_without_red_evidence_warns(self) -> None:
+        self.project.write_state(
+            state(active_task="none", status="idle", workflow_mode="none")
+        )
+        self.project.add_design_record("1.1.0")
+        self.project.write_task(
+            "APP-001",
+            task(
+                status="done",
+                complete=True,
+                red_verified=True,
+                design_version="1.1.0",
+                schema_version="project-dev-task/v2",
+            ),
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertIn("no Red Evidence section", self.messages(findings))
+
+    def test_v1_card_is_not_retroactively_evidence_bound(self) -> None:
+        # v1 predates the requirement, and the published compatibility promise says
+        # existing task files keep validating exactly as they did.
+        self.project.write_state(
+            state(active_task="none", status="idle", workflow_mode="none")
+        )
+        self.project.add_design_record("1.1.0")
+        self.project.write_task(
+            "APP-001",
+            task(
+                status="done",
+                complete=True,
+                red_verified=True,
+                design_version="1.1.0",
+            ),
+        )
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertEqual(0, findings.warnings)
+
+    def test_recorded_red_evidence_satisfies_the_gate(self) -> None:
+        self.project.write_state(
+            state(active_task="none", status="idle", workflow_mode="none")
+        )
+        self.project.add_design_record("1.1.0")
+        content = task(
+            status="done",
+            complete=True,
+            red_verified=True,
+            design_version="1.1.0",
+            schema_version="project-dev-task/v2",
+        ).replace(
+            "- Focused and regression checks passed.",
+            "`python -m pytest tests/test_app.py -q` passed after the change.",
+        )
+        content += textwrap.dedent(
+            """\
+
+            ## Red Evidence
+
+            `python -m pytest tests/test_app.py -q` failed with 1 failure before the change.
+            """
+        )
+        self.project.write_task("APP-001", content)
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertEqual(0, findings.warnings)
+
+    def test_brief_summarises_work_and_flags_a_branch_mismatch(self) -> None:
+        self.project.commit()
+        self.project.write_state(
+            state(
+                status="in_progress",
+                git_branch=self.TASK_BRANCH,
+                workflow_mode="standard",
+            )
+        )
+        self.project.write_task(
+            "APP-001", task(status="in_progress", workflow_mode="standard")
+        )
+
+        mismatched = MODULE.brief(self.project.root)
+        self.assertIn("APP-001", mismatched)
+        self.assertIn("MISMATCH", mismatched)
+        self.assertIn("allowed=", mismatched)
+
+        self.project.git("switch", "-c", self.TASK_BRANCH)
+        aligned = MODULE.brief(self.project.root)
+
+        self.assertNotIn("MISMATCH", aligned)
 
 
 if __name__ == "__main__":

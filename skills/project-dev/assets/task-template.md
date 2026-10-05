@@ -1,5 +1,5 @@
 ---
-schema_version: project-dev-task/v1
+schema_version: project-dev-task/v2
 task_id: INIT-001
 stage: discovery
 title: Confirm the first observable project outcome
@@ -72,9 +72,14 @@ Forbidden:
 - Add exact trusted commands or narrowly defined manual inspections.
 - `python <skill-dir>/scripts/check_project_state.py --project <repo> --strict`
 
+## Red Evidence
+
+- Required when `tdd_red_verified` is true: record the focused command and the failing result observed before implementation.
+- A claim that it failed is not evidence. Show the command and what it reported.
+
 ## Delivery Evidence
 
-- Pending.
+- Pending. Show the commands that were run, not only the conclusion they reached.
 
 ## Remaining Risks
 

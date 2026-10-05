@@ -1,8 +1,8 @@
 # Codex Project Dev Skills Design
 
-Version: 1.1.0
+Version: 1.2.0
 
-Last updated: 2026-08-28
+Last updated: 2026-10-05
 
 ## Project Goal
 
@@ -32,6 +32,8 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 - Git workflows prohibit force-based recovery and unapproved remote actions.
 - TDD completion requires observed Red-step evidence for the intended behavior.
 - Existing v1 coordination files remain valid while optional adaptive fields enable lower-overhead work.
+- Validation reconciles the coordination records with the repository, not only with each other: branch claims, declared scope bounds, and completed-work evidence are compared against what the repository actually shows.
+- Evidence binding is opt-in through `project-dev-task/v2`, so v1 task cards keep their original meaning.
 - Public releases are verified, checksummed, and produced from committed source.
 
 ## Delivery Roadmap
@@ -43,6 +45,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 ## Implementation Status
 
 - `v1.1.0` adaptive workflow implementation is published and validated on GitHub.
+- `v1.2.0` adds repository-reality validation (`--brief`, branch reconciliation, scope enforcement, evidence binding) and is implemented but not yet released.
 
 ## Decisions And Assumptions
 
@@ -50,8 +53,15 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 - TDD remains a separate Skill to avoid loading specialized instructions into unrelated tasks.
 - Project-specific business rules remain outside the generic Skills.
 - Low-risk work should pay only the coordination cost required for safe cross-session recovery.
+- A record that contradicts the repository is worse than a missing record, because the next session trusts it: the checker therefore treats branch lies and forbidden-path changes as errors, and softer scope or evidence lapses as warnings that `--strict` promotes at completion.
 
 ## Change Log
+
+### 1.2.0 - unreleased
+
+- Added repository-reality validation: branch reconciliation, scope enforcement against actual changes, and evidence binding for completed work.
+- Added `--brief` orientation digest.
+- Added opt-in `project-dev-task/v2`; v1 task cards remain valid and are not retroactively judged.
 
 ### 1.1.0 - 2026-08-28
 

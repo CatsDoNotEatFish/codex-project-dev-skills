@@ -4,6 +4,19 @@ All notable changes to this repository are recorded here.
 
 ## Unreleased
 
+### Added
+
+- Reconcile the coordination records with the repository: the checker compares `STATE.md`'s `git_branch` and the active card's `branch` against the branch that is actually checked out.
+- Compare the changes actually present against the active card's `allowed_paths` and `forbidden_paths`, so declared scope bounds are enforced rather than advisory.
+- Bind claims to evidence through the opt-in `project-dev-task/v2` schema: `tdd_red_verified: true` now requires a `## Red Evidence` section recording the focused command and its failing result, and `checks_complete: true` requires the delivery evidence to show a command.
+- Add `--brief`, a compact orientation digest for a session starting fresh, built from the same parsers as validation.
+
+### Compatibility
+
+- The new checks report warnings, except where a record contradicts the repository outright — a branch that is not checked out, or a change inside `forbidden_paths` — which are errors. `--strict` promotes the warnings during task completion.
+- Evidence binding is opt-in via `project-dev-task/v2`; v1 task cards are not retroactively judged and keep validating exactly as before.
+- Coordination files under `docs/ai/` are excluded from scope comparison, and a repository with no baseline commit skips scope checking, so existing v1 projects remain valid.
+
 ### Changed
 
 - Document the exact state-checker invocation in `project-dev` and mark the script as execute-only, so an agent no longer has to discover the command — or read the 727-line checker or its test suite — in order to run it.

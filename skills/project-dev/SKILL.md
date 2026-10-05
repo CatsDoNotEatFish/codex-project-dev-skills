@@ -24,10 +24,10 @@ Conversation history is not project state. Preserve unrelated user changes and r
 
 1. Find the project root and read applicable `AGENTS.md` instructions.
 2. Inspect the current Git branch and worktree.
-3. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md`.
+3. Run the recovery digest rather than reading the coordination files in full: `python <skill-dir>/scripts/check_project_state.py --project <repo> --brief`. It prints project policy, the active task and its scope, the declared versus actual branch, blockers, and the next safe action. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md` in full only when the digest is not enough.
 4. If coordination files are missing, classify the project and read [references/initialization.md](references/initialization.md).
 5. If state points to `inline`, recover from its outcome, handoff, branch, and worktree diff. If it points to a task ID, read only that card, its design references, and relevant implementation files.
-6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check. Execute it — never read it: `python <skill-dir>/scripts/check_project_state.py --project <repo> --strict`, where `<skill-dir>` is this skill's own directory (the one holding this `SKILL.md`). The exit code is the verdict and a passing run prints a single line.
+6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check. Execute it — never read it: `python <skill-dir>/scripts/check_project_state.py --project <repo> --strict`, where `<skill-dir>` is this skill's own directory (the one holding this `SKILL.md`). The exit code is the verdict and a passing run prints a single line. The checker reconciles records with the repository, not just with each other: `git_branch` must match the checked-out branch, changes must stay inside the active card's `allowed_paths` and outside `forbidden_paths`, and completed work must show the commands and Red evidence it claims. Record scope and evidence truthfully rather than approximately.
 
 Do not read all design history, completed cards, raw data, or unrelated modules by default.
 

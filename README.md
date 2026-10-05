@@ -88,6 +88,35 @@ $project-dev 继续开发
 
 低风险快速任务没有单独任务卡时，`STATE.md` 会保存简短目标和交接说明，未提交 Git 差异保存实际实现。任务变大或需要跨多个会话时，Agent 会升级为标准任务卡和分支，而不是丢弃当前修改。
 
+### 一条命令恢复上下文
+
+```powershell
+python <skill-dir>/scripts/check_project_state.py --project <repo> --brief
+```
+
+`--brief` 输出项目策略、活动任务及其范围、**声明的分支与实际检出的分支**、阻塞项、验证基线和下一步安全动作，用它替代逐个打开协调文件。摘要与校验共用同一套解析器，因此不会和校验结论互相矛盾。
+
+### 校验器核对"记录"与"仓库现实"
+
+`check_project_state.py` 不只检查文档之间是否自洽，还会与仓库实际状态对照：
+
+| 校验 | 级别 |
+| --- | --- |
+| 有活动任务时，`STATE.md` 的 `git_branch` 与实际检出分支不一致 | ERROR |
+| 同样不一致但当前空闲或 `inline` | WARN |
+| 活动任务卡声明了 `branch` 且已开工，但实际检出的不是它 | ERROR |
+| 实际改动落在活动卡的 `forbidden_paths` 内 | ERROR |
+| 实际改动落在 `allowed_paths` 之外 | WARN |
+| `tdd_red_verified: true` 但 `## Red Evidence` 未记录命令与失败结果 | WARN |
+| `checks_complete: true` 但交付证据没有写出任何命令 | WARN |
+| 仓库尚无基线提交（全新项目） | 范围校验自动跳过，不报警 |
+
+两个实现细节值得知道：协调文件本身（`docs/ai/`）不计入范围校验，否则每个任务都会因为更新状态而误报；状态仍为 `ready` 的任务卡允许其 `branch` 尚不存在，因此不与实际分支比对。
+
+证据绑定只在 `project-dev-task/v2` 的任务卡上生效。v1 卡片早于这条要求，按既有的兼容承诺继续原样通过校验，不会被追溯判定；新建任务卡使用 v2。`assets/task-template.md` 已经输出 v2。
+
+`--strict` 会把 WARN 升级为失败，而任务完成流程使用 `--strict`，所以这些边界在交付时会真正生效，而不只是建议。
+
 ### 修改或新增功能
 
 ```text
@@ -167,7 +196,7 @@ skills/
 python -B -m unittest discover -s skills/project-dev/tests -p "test_*.py" -v
 ```
 
-当前版本包含 20 项状态、任务、自适应模式、TDD、Git、安全路径和空项目基线测试。
+当前版本包含 29 项状态、任务、自适应模式、TDD、Git、安全路径、空项目基线，以及仓库现实校验（范围边界、分支一致性、证据绑定）测试。
 
 ## 版本
 
