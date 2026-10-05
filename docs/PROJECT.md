@@ -36,7 +36,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 - Validation reconciles the coordination records with the repository, not only with each other: branch claims, declared scope bounds, and completed-work evidence are compared against what the repository actually shows.
 - Evidence binding is opt-in through `project-dev-task/v2`, so v1 task cards keep their original meaning.
 - Verification cost follows the change rather than the mode name: `operations` covers CI, packaging, and release plumbing, which are configuration verified by a dry run and artifact inspection rather than by unit tests, so a release publishing already-verified sources does not re-run their suites.
-- Public releases are verified, checksummed, and produced from committed source.
+- Public releases are verified, checksummed, and produced from committed source. Archives are built with `git -c core.autocrlf=false archive` so they byte-match the tagged commit; `v1.1.0` shipped per-skill archives with CRLF-converted endings while claiming committed-source provenance, which this rule prevents.
 
 ## Delivery Roadmap
 
@@ -47,7 +47,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 ## Implementation Status
 
 - `v1.1.0` adaptive workflow implementation is published and validated on GitHub.
-- `v1.2.0` adds repository-reality validation (`--brief`, branch reconciliation, scope enforcement, evidence binding) and scopes verification cost to what actually changed; it is implemented but not yet released.
+- `v1.2.0` is published: repository-reality validation (`--brief`, branch reconciliation, scope enforcement, evidence binding) and verification cost scoped to what actually changed.
 
 ## Decisions And Assumptions
 
@@ -59,7 +59,7 @@ The repository owns project lifecycle coordination and an optional focused TDD w
 
 ## Change Log
 
-### 1.2.0 - unreleased
+### 1.2.0 - 2026-10-05
 
 - Added repository-reality validation: branch reconciliation, scope enforcement against actual changes, and evidence binding for completed work.
 - Added `--brief` orientation digest.
