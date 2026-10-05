@@ -3,7 +3,7 @@ schema_version: project-dev-task/v2
 task_id: RELEASE-003
 stage: public-release
 title: Publish v1.2.0 release
-status: in_progress
+status: done
 workflow_mode: strict
 branch: task/release-003-publish-v1-2-0
 base_branch: main
@@ -17,8 +17,8 @@ test_reason: Release packaging changes no executable behavior; the suites' input
 tdd_red_verified: false
 design_sync_required: true
 design_sync_reason: Publishing v1.2.0 changes the durable release and implementation status
-acceptance_complete: false
-checks_complete: false
+acceptance_complete: true
+checks_complete: true
 design_sync_complete: true
 design_version: 1.2.0
 created_at: 2026-10-05
@@ -65,12 +65,12 @@ Forbidden:
 
 ## Acceptance Criteria
 
-- [ ] Version references identify `v1.2.0` as the current stable release in `README.md`, `CHANGELOG.md`, and `docs/PROJECT.md`.
-- [ ] All three archives are built from the `v1.2.0` tag with `core.autocrlf=false` and contain zero CRLF bytes, so they byte-match committed source.
-- [ ] `SHA256SUMS.txt` matches the built archives, and the uploaded asset digests match the local files.
-- [ ] `v1.2.0` is an annotated tag resolving to the release merge commit on `main`.
-- [ ] `Validate Skills` passes for the tagged commit.
-- [ ] `skills/` is unchanged by this task.
+- [x] Version references identify `v1.2.0` as the current stable release in `README.md`, `CHANGELOG.md`, and `docs/PROJECT.md`.
+- [x] All three archives are built from the `v1.2.0` tag with `core.autocrlf=false` and contain zero CRLF bytes, so they byte-match committed source.
+- [x] `SHA256SUMS.txt` matches the built archives, and the uploaded asset digests match the local files.
+- [x] `v1.2.0` is an annotated tag resolving to the release merge commit on `main`.
+- [x] `Validate Skills` passes for the tagged commit.
+- [x] `skills/` is unchanged by this task.
 
 ## Required Checks
 
@@ -87,7 +87,16 @@ Forbidden:
 
 ## Delivery Evidence
 
-- Pending publication.
+- Version references set to `v1.2.0` in `README.md`, `CHANGELOG.md` (Unreleased promoted to `## 1.2.0 - 2026-10-05`, new empty Unreleased retained), and `docs/PROJECT.md`.
+- `git diff --name-only main...HEAD -- skills/` returned nothing, confirming no shipped Skill changed.
+- Tag `v1.2.0` is annotated (tag object `46e5760`) and `git rev-parse v1.2.0^{commit}` returned `472c697c6d9b86682dad489db69fc193f8e9b01d`, the release merge commit on `main`.
+- Archives built with `git -c core.autocrlf=false archive` from `v1.2.0`; entry counts 49 / 20 / 6, matching the `v1.1.0` layout.
+- Byte-faithfulness verified per entry: all 50 file entries' `git hash-object --no-filters` values equal their `v1.2.0:<path>` blob ids, and no entry contains a CRLF pair.
+- Full-repo archive contains no `dist/` or `.git/` entry and does contain `skills/project-dev/SKILL.md`.
+- `SHA256SUMS.txt` regenerated (3 lines, LF) and each line re-verified against the built archives.
+- Uploaded asset digests returned by the GitHub API equal the local hashes: `78a0d63c…` (bundle), `95c9e857…` (project-dev), `f180f620…` (tdd-workflow), `b139dbbe…` (sums).
+- GitHub release https://github.com/CatsDoNotEatFish/codex-project-dev-skills/releases/tag/v1.2.0 is public, not a draft and not a prerelease, with all four assets uploaded.
+- `Validate Skills` run `37274284040` (run #5) completed successfully for `472c697`.
 
 ## Remaining Risks
 
