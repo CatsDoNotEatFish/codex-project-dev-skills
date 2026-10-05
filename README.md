@@ -210,11 +210,11 @@ skills/
 python -B -m unittest discover -s skills/project-dev/tests -p "test_*.py" -v
 ```
 
-当前版本包含 29 项状态、任务、自适应模式、TDD、Git、安全路径、空项目基线，以及仓库现实校验（范围边界、分支一致性、证据绑定）测试。
+当前版本包含 34 项测试，覆盖状态、任务、自适应模式、TDD、Git、安全路径、空项目基线、仓库现实校验（范围边界、分支一致性、证据绑定），以及测试模式选择（发布打包不再被强制跑测试）。
 
 ## 版本
 
-当前稳定版本：`v1.1.0`，包含自适应低开销工作流和兼容旧版协调文件的升级路径。
+当前稳定版本：`v1.2.0`，在自适应低开销工作流之上，把协调记录与仓库现实对齐（分支一致性、范围边界、证据绑定），并把验证成本收敛到"实际改了什么"。
 
 详细内容见 [CHANGELOG.md](CHANGELOG.md) 和 [GitHub Releases](https://github.com/CatsDoNotEatFish/codex-project-dev-skills/releases)。
 

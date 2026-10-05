@@ -4,6 +4,8 @@ All notable changes to this repository are recorded here.
 
 ## Unreleased
 
+## 1.2.0 - 2026-10-05
+
 ### Added
 
 - Reconcile the coordination records with the repository: the checker compares `STATE.md`'s `git_branch` and the active card's `branch` against the branch that is actually checked out.

@@ -2,11 +2,11 @@
 schema_version: project-dev-state/v1
 project: codex-project-dev-skills
 stage: public-release
-active_task: none
-status: idle
-workflow_mode: none
+active_task: RELEASE-003
+status: in_progress
+workflow_mode: strict
 last_completed: OPT-004
-git_branch: main
+git_branch: task/release-003-publish-v1-2-0
 git_remote: origin
 push_policy: manual
 updated_at: 2026-10-05
@@ -16,7 +16,7 @@ updated_at: 2026-10-05
 
 ## Current Outcome
 
-The `v1.2.0` line is merged to `main`: per-task instruction footprint reduced, coordination records reconciled with the repository, and verification cost scoped to what actually changed. Not yet released.
+Publish the merged `v1.2.0` work as a GitHub release whose archives byte-match the tagged commit and whose checksums, tag provenance, and CI status are verified before and after upload.
 
 ## Blockers
 
@@ -24,16 +24,16 @@ The `v1.2.0` line is merged to `main`: per-task instruction footprint reduced, c
 
 ## Next Tasks
 
-- Cut `RELEASE-003` from committed source: regenerate `dist/` archives, verify contents and `SHA256SUMS.txt`, tag, publish, then update version references.
-- Do not re-run the unit suite for the packaging step: use `test_mode: none`, verify artifacts only, and cite the verified run below.
+- Finalise version references, merge to `main`, tag `v1.2.0`, build and verify archives, then publish.
+- Do not re-run the unit suite: its inputs are unchanged since `e96ac1c`.
 
 ## Verification Baseline
 
-- Tests: 34 project state, adaptive workflow, Git lifecycle, repository-reality gate, and test-mode selection tests passed on `main`.
+- Tests: 34 project state, adaptive workflow, Git lifecycle, repository-reality gate, and test-mode selection tests passed at `e96ac1c`.
 - State checker: strict validation passed with zero errors and zero warnings on `main`.
-- Merged: `merge(OPT-004)` at `3e7c028` brings `aca0a40`, `86c593a`, and `d23eeb1`.
-- Release: `v1.1.0` remains the published release; `dist/` still holds only the v1.0.0 and v1.1.0 archives and must be regenerated for `v1.2.0`.
+- Release: `v1.1.0` is the current published release; `dist/` holds only the v1.0.0 and v1.1.0 archives.
+- Provenance defect found: `v1.1.0`'s per-skill archives were packaged with `core.autocrlf=true`, so they carry CRLF endings and do not byte-match the tag, despite the release notes claiming committed-source provenance.
 
 ## Handoff
 
-`main` carries the `v1.2.0` work and is pushed to `origin/main`. The task branches `task/opt-002-token-footprint`, `task/opt-003-reality-gates`, and `task/opt-004-test-scope` remain local only, matching the repository convention that `origin` tracks `main` alone. `docs/PROJECT.md` records `v1.2.0` as implemented but unreleased, so the next delivery is a release task rather than a feature task. `dist/` is a protected path: regenerate it from committed source instead of editing it.
+`RELEASE-003` is the active strict task on `task/release-003-publish-v1-2-0`, which descends from `e96ac1c` on `main`. Only version references and release records change here; `skills/` must stay untouched. Archives are built with `git -c core.autocrlf=false archive` from the tag so they byte-match committed source. Publication requires the user's authorization, which has been given for this release.
