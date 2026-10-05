@@ -4,6 +4,11 @@ All notable changes to this repository are recorded here.
 
 ## Unreleased
 
+### Changed
+
+- Document the exact state-checker invocation in `project-dev` and mark the script as execute-only, so an agent no longer has to discover the command — or read the 727-line checker or its test suite — in order to run it.
+- Read `references/workflow-modes.md` only when selecting `strict`, when a mode decision is contested, or when project policy overrides the default. Ordinary tasks classify from the inline summary, removing roughly 950 tokens of reference text from every task.
+
 ## 1.1.0 - 2026-08-28
 
 ### Changed

@@ -5,18 +5,18 @@ stage: public-release
 active_task: none
 status: idle
 workflow_mode: none
-last_completed: RELEASE-002
-git_branch: main
+last_completed: OPT-002
+git_branch: task/opt-002-token-footprint
 git_remote: origin
 push_policy: manual
-updated_at: 2026-08-28
+updated_at: 2026-10-05
 ---
 
 # Current Project State
 
 ## Current Outcome
 
-`v1.1.0` is published with verified archives, checksums, tag provenance, and a successful GitHub Actions run.
+`OPT-002` reduces the per-task instruction footprint of `project-dev`: the state-checker command is documented at its point of use, and `references/workflow-modes.md` is no longer mandatory for ordinary tasks.
 
 ## Blockers
 
@@ -24,16 +24,16 @@ updated_at: 2026-08-28
 
 ## Next Tasks
 
-- Collect real usage feedback before adding more workflow rules.
+- Review and merge `task/opt-002-token-footprint`, then cut a release from committed source.
+- Keep collecting real usage feedback before adding further workflow rules.
 
 ## Verification Baseline
 
-- Skill structure: both Skills passed official validation.
 - Tests: 20 project state, adaptive workflow, and Git lifecycle tests passed.
-- State checker: strict validation passed for the release task.
-- GitHub Actions: `Validate Skills` run `33171027728` passed for commit `2ebcd0f`.
-- Release: `v1.1.0` is public with four uploaded assets whose GitHub digests match the local files.
+- State checker: strict validation passed with zero errors and zero warnings.
+- Token effect: `SKILL.md` grows by 382 bytes; `references/workflow-modes.md` (~3.8 KB) stops loading on ordinary tasks, a net saving of roughly 850 tokens per task.
+- Release: `v1.1.0` remains the published release with verified archives and SHA-256 checksums.
 
 ## Handoff
 
-`v1.1.0` is published at https://github.com/CatsDoNotEatFish/codex-project-dev-skills/releases/tag/v1.1.0. No delivery task is active; collect observed usage failures before planning another workflow change.
+`task/opt-002-token-footprint` holds the only change to `skills/project-dev/SKILL.md`; `main` still matches `origin/main` at `c308537`. No design synchronization was required: workflow semantics, the coordination file schema, and the published `v1.1.0` contract are unchanged, so this remains an unreleased instruction-routing change until the next release task.

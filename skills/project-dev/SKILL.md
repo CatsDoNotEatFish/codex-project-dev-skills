@@ -27,13 +27,13 @@ Conversation history is not project state. Preserve unrelated user changes and r
 3. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md`.
 4. If coordination files are missing, classify the project and read [references/initialization.md](references/initialization.md).
 5. If state points to `inline`, recover from its outcome, handoff, branch, and worktree diff. If it points to a task ID, read only that card, its design references, and relevant implementation files.
-6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check.
+6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check. Execute it — never read it: `python <skill-dir>/scripts/check_project_state.py --project <repo> --strict`, where `<skill-dir>` is this skill's own directory (the one holding this `SKILL.md`). The exit code is the verdict and a passing run prints a single line.
 
 Do not read all design history, completed cards, raw data, or unrelated modules by default.
 
 ## Choose Workflow Rigor
 
-Read [references/workflow-modes.md](references/workflow-modes.md) once when classifying a new outcome. Use the lightest safe mode and escalate when scope or risk grows.
+Classify the outcome from the summary below. Read [references/workflow-modes.md](references/workflow-modes.md) only when selecting `strict`, when a mode decision is contested, or when project policy overrides the default. Use the lightest safe mode and escalate when scope or risk grows.
 
 - **Fast**: a low-risk, narrow change expected to finish in one session. Record it inline in `STATE.md`; do not create a task card or task branch.
 - **Standard**: the default for ordinary features and fixes. Use one compact card, one short branch, focused checks, and one completion update.
