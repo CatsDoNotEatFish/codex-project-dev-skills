@@ -55,7 +55,7 @@ Before editing, confirm the requested outcome and protected boundaries. Then fol
 
 For standard or strict work, create a card from [assets/task-template.md](assets/task-template.md). Record `workflow_mode`, test mode, a concrete test reason, and an explicit `design_sync_required` decision with its reason. Keep future cards `planned` and only one active delivery task.
 
-Read [references/testing-strategy.md](references/testing-strategy.md) when executable behavior changes. Use `$tdd-workflow` only for `tdd` or the test-first portion of `mixed`; ordinary work does not gain value from performative Red-Green-Refactor.
+Read [references/testing-strategy.md](references/testing-strategy.md) when executable behavior changes. When none did — documentation, version metadata, release notes, packaging, CI or release configuration, task and state files — use `test_mode: none`, verify what actually changed (artifact contents, checksums, tag provenance, links, rendering), and cite the last verified run instead of repeating it: a re-run on unchanged inputs cannot fail differently. Use `$tdd-workflow` only for `tdd` or the test-first portion of `mixed`; ordinary work does not gain value from performative Red-Green-Refactor.
 
 Read [references/git-workflow.md](references/git-workflow.md) only before initialization, branch or commit decisions, synchronization, integration, conflict recovery, or cleanup.
 
@@ -72,8 +72,8 @@ If fast work expands, becomes risky, or will span multiple sessions, convert `in
 A change is complete when observable acceptance passes, required checks pass, required design synchronization is done, and no blocker remains.
 
 - Fast: reset state to `active_task: none`, `status: idle`, `workflow_mode: none`; commit the intentional change on the permitted current branch.
-- Standard: update card and state once, run the checker, commit the verified task, merge the short branch, and follow push policy.
-- Strict: run all declared gates and integration checks before completion or external delivery.
+- Standard: update card and state once, run the state checker (`--strict`), commit the verified task, merge the short branch, and follow push policy.
+- Strict: run the checks the card declares before completion or external delivery — at the depth the actual risk justifies, not the widest set available.
 
 Do not start the next task automatically. Report the workflow mode, outcome, branch/commit, checks, design sync decision, remote status, residual risk, and next safe action in a concise handoff.
 

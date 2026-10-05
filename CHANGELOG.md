@@ -19,6 +19,7 @@ All notable changes to this repository are recorded here.
 
 ### Changed
 
+- Scope verification cost to what actually changed. `operations` is no longer an executable impact, so a release or packaging task may declare `test_mode: none` instead of being forced into a test mode, and the rule that unchanged inputs must not be re-run is now stated in `SKILL.md`, `references/testing-strategy.md`, and `references/workflow-modes.md` rather than left implicit.
 - Document the exact state-checker invocation in `project-dev` and mark the script as execute-only, so an agent no longer has to discover the command — or read the 727-line checker or its test suite — in order to run it.
 - Read `references/workflow-modes.md` only when selecting `strict`, when a mode decision is contested, or when project policy overrides the default. Ordinary tasks classify from the inline summary, removing roughly 950 tokens of reference text from every task.
 

@@ -32,7 +32,7 @@ Workflow:
 
 1. Create one compact task card and short task branch.
 2. Set state and card to `in_progress` once; do not add a separate `verifying` transition unless another process requires it.
-3. Implement a vertical slice and run focused tests.
+3. Implement a vertical slice, and run focused tests when executable behavior changed.
 4. Run broader regression checks only when shared behavior changed.
 5. Set `design_sync_required` from actual durable design impact, not from file count or the mere existence of executable changes.
 6. Update card, state, design when required, and evidence once at completion.
@@ -53,7 +53,7 @@ Use `strict` for:
 - broad refactors across shared boundaries;
 - recovery from conflicting or uncertain repository state.
 
-Strict adds explicit rollback/recovery behavior, complete task scope, state checker preflight and completion checks, broader tests, staged-diff review, design synchronization when durable decisions change, and integration gates. TDD is selected only when the behavior is stable and testable; strict does not automatically mean TDD.
+Strict adds explicit rollback/recovery behavior, complete task scope, state checker preflight and completion checks, broader checks proportional to what actually changed, staged-diff review, design synchronization when durable decisions change, and integration gates. TDD is selected only when the behavior is stable and testable; strict does not automatically mean TDD, and strict does not by itself justify re-running a suite whose inputs have not changed.
 
 ## Escalation
 

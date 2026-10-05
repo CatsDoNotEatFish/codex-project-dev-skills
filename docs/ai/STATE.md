@@ -5,8 +5,8 @@ stage: public-release
 active_task: none
 status: idle
 workflow_mode: none
-last_completed: OPT-003
-git_branch: task/opt-003-reality-gates
+last_completed: OPT-004
+git_branch: task/opt-004-test-scope
 git_remote: origin
 push_policy: manual
 updated_at: 2026-10-05
@@ -16,7 +16,7 @@ updated_at: 2026-10-05
 
 ## Current Outcome
 
-`OPT-003` makes the coordination records verifiable against the repository: the checker now reconciles the recorded branch with the checked-out branch, compares actual changes against the active card's scope bounds, binds completed-work claims to recorded commands, and offers `--brief` for orientation.
+`OPT-004` scopes verification cost to what actually changed: `operations` is no longer an executable impact, so release and packaging tasks may declare `test_mode: none`, and the policy that unchanged inputs must not be re-run is now stated where mode and check selection happen.
 
 ## Blockers
 
@@ -24,16 +24,16 @@ updated_at: 2026-10-05
 
 ## Next Tasks
 
-- Review and merge `task/opt-003-reality-gates`, then cut a release from committed source.
-- Both `task/opt-002-token-footprint` and `task/opt-003-reality-gates` remain unmerged and unpushed.
+- Review and merge `task/opt-004-test-scope`, then cut a release from committed source.
+- `task/opt-002-token-footprint`, `task/opt-003-reality-gates`, and `task/opt-004-test-scope` are all local and unpushed; only the last is needed, since it descends from the others.
 
 ## Verification Baseline
 
-- Tests: 29 project state, adaptive workflow, Git lifecycle, and repository-reality gate tests passed.
+- Tests: 34 project state, adaptive workflow, Git lifecycle, repository-reality gate, and test-mode selection tests passed.
 - State checker: strict validation passed with zero errors and zero warnings on this repository.
 - Release: `v1.1.0` remains the published release with verified archives and SHA-256 checksums.
 - Branch reality: `main` still matches `origin/main` at `c308537`.
 
 ## Handoff
 
-`task/opt-003-reality-gates` supersedes `task/opt-002-token-footprint`, which is an ancestor of its HEAD and holds the earlier token-footprint change. Both branches are local and unpushed; `main` is untouched. The design document was deliberately not synchronized: the gates enforce scope and branch bounds the design already declares, and the behaviour change is recorded in `CHANGELOG.md` and `README.md`. A release task must regenerate `dist/` from committed source before publishing.
+`task/opt-004-test-scope` descends from `task/opt-003-reality-gates` (`86c593a`) and `task/opt-002-token-footprint` (`d23eeb1`); merging it brings all three. `main` is untouched. The design document records the corrected testing policy under `v1.2.0`, still unreleased. A release task must regenerate `dist/` from committed source, and must not re-run the suite for the packaging step itself — that is exactly the waste this change removes.

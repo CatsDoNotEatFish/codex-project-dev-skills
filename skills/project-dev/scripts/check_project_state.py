@@ -41,7 +41,17 @@ IMPACTS = {
     "delivery_status",
     "none",
 }
-EXECUTABLE_IMPACTS = IMPACTS - {"documentation", "delivery_status", "none"}
+# Impacts whose verification needs a test harness, because they change behavior.
+# `operations` is deliberately excluded: CI, packaging, and release plumbing are
+# configuration, verified by a dry run, an artifact inspection, or a config check
+# rather than by unit tests. Treating it as executable forced release and packaging
+# tasks to declare a test mode, and therefore to re-run suites on unchanged code.
+EXECUTABLE_IMPACTS = IMPACTS - {
+    "documentation",
+    "delivery_status",
+    "operations",
+    "none",
+}
 BASE_PROTECTED_PATTERNS = [
     ".env",
     ".env.*",

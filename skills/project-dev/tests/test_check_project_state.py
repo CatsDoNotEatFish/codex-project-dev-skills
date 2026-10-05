@@ -788,5 +788,62 @@ class RealityGateTests(unittest.TestCase):
         self.assertNotIn("MISMATCH", aligned)
 
 
+class TestModeSelectionTests(unittest.TestCase):
+    """Verification cost follows what changed, not the name of the workflow mode."""
+
+    def setUp(self) -> None:
+        self.project = ProjectFixture()
+
+    def tearDown(self) -> None:
+        self.project.close()
+
+    @staticmethod
+    def messages(findings: object) -> str:
+        return "\n".join(item.message for item in findings.items)
+
+    def card(self, impacts: str, test_mode: str) -> None:
+        self.project.write_state(state())
+        self.project.write_task("APP-001", task(impacts=impacts, test_mode=test_mode))
+
+    def test_release_task_may_declare_no_test_mode(self) -> None:
+        # A release publishes already-verified sources and verifies artifacts, so
+        # `operations` must not force a test mode onto it.
+        self.card('["documentation", "operations", "delivery_status"]', "none")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertEqual(0, findings.warnings)
+
+    def test_behavior_change_still_requires_a_test_mode(self) -> None:
+        self.card('["domain"]', "none")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertGreaterEqual(findings.errors, 1)
+        self.assertIn(
+            "executable impacts cannot use test_mode 'none'", self.messages(findings)
+        )
+
+    def test_operations_alone_does_not_force_the_tdd_policy(self) -> None:
+        self.project.write_config(project_config(tdd_policy="required"))
+        self.card('["operations"]', "test-after")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertEqual(0, findings.errors)
+        self.assertEqual(0, findings.warnings)
+
+    def test_behavior_impact_still_honours_required_tdd_policy(self) -> None:
+        self.project.write_config(project_config(tdd_policy="required"))
+        self.card('["domain"]', "test-after")
+
+        findings = MODULE.validate_project(self.project.root)
+
+        self.assertIn(
+            "project tdd_policy requires tdd or mixed mode", self.messages(findings)
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
