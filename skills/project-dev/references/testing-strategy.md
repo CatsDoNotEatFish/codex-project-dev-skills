@@ -14,11 +14,19 @@ Prefer `tdd` or `mixed` only when the behavior can be expressed as an observable
 
 ## Match Cost To Workflow
 
+Verification cost follows what actually changed, not the mode name. A `strict` task that changes
+no executable behavior does not earn a test run by being strict.
+
 - Fast: run one focused check or direct inspection. Use a regression test for a bug when cheap; do not load the full TDD workflow for trivial presentation changes.
 - Standard: run focused tests during implementation and one broader affected suite at completion when shared behavior changed.
-- Strict: run focused, integration, migration/rollback, security, or full-suite checks proportional to the actual risk.
+- Strict: run the checks the task declares, at the depth the actual risk justifies — focused, integration, migration/rollback, or security. A release or deployment that publishes already-verified sources verifies its artifacts, provenance, and authorization rather than the unit suites again.
 
-Do not rerun the same passing command when relevant inputs have not changed. Do not execute the full suite after every Red-Green cycle; run it once after the coherent implementation or refactor is complete.
+## Do Not Re-run Unchanged Checks
+
+- Do not re-run the same passing command when its relevant inputs have not changed. Same inputs, same commit, same green result: a re-run cannot fail differently, so it adds cost and nothing else.
+- When no executable behavior changed — documentation, version metadata, release notes, packaging, CI or release configuration, task and state files — use `test_mode: none`. Verify what did change (artifact contents and exclusions, checksums, tag provenance, links, rendering) and cite the last verified run instead of repeating it.
+- For a release, the checks that can still fail after the code was verified are the artifact ones: archive contents, `SHA256SUMS.txt`, the commit a tag resolves to, and the CI status of that commit.
+- Do not execute the full suite after every Red-Green cycle; run it once after the coherent implementation or refactor is complete.
 
 ## AI-Specific Evidence
 

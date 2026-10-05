@@ -24,6 +24,10 @@ TDD_POLICIES = {"risk-based", "required", "disabled"}
 TEST_MODES = {"tdd", "mixed", "test-after", "exploratory", "none"}
 WORKFLOW_MODES = {"fast", "standard", "strict"}
 WORKFLOW_POLICIES = {"adaptive", "standard", "strict"}
+# `v2` adds evidence binding to completed work. It is opt-in so that v1 cards, which
+# predate the requirement and remain valid, keep validating exactly as before.
+TASK_SCHEMA_VERSIONS = {"project-dev-task/v1", "project-dev-task/v2"}
+EVIDENCE_BOUND_SCHEMA = "project-dev-task/v2"
 IMPACTS = {
     "data",
     "api",
@@ -37,7 +41,17 @@ IMPACTS = {
     "delivery_status",
     "none",
 }
-EXECUTABLE_IMPACTS = IMPACTS - {"documentation", "delivery_status", "none"}
+# Impacts whose verification needs a test harness, because they change behavior.
+# `operations` is deliberately excluded: CI, packaging, and release plumbing are
+# configuration, verified by a dry run, an artifact inspection, or a config check
+# rather than by unit tests. Treating it as executable forced release and packaging
+# tasks to declare a test mode, and therefore to re-run suites on unchanged code.
+EXECUTABLE_IMPACTS = IMPACTS - {
+    "documentation",
+    "delivery_status",
+    "operations",
+    "none",
+}
 BASE_PROTECTED_PATTERNS = [
     ".env",
     ".env.*",
@@ -235,10 +249,14 @@ def normalize_repo_path(value: str) -> str:
     return normalized.lstrip("/")
 
 
-def matches_protected_pattern(path: str, pattern: str) -> bool:
+def matches_path_pattern(path: str, pattern: str) -> bool:
+    """Match a repo-relative path against a glob, an exact path, or a directory prefix.
+
+    A directory entry keeps its trailing slash (``docs/``) or uses ``docs/**``; a bare
+    name matches that exact path only. ``*`` also crosses ``/``, matching the behaviour
+    of the protected-path patterns this shares.
+    """
     normalized = normalize_repo_path(path)
-    if normalized.lower() == ".env.example":
-        return False
     candidate = normalized.lower()
     rule = normalize_repo_path(pattern).lower()
     if not rule:
@@ -250,6 +268,12 @@ def matches_protected_pattern(path: str, pattern: str) -> bool:
         prefix = rule.rstrip("/")
         return candidate == prefix or candidate.startswith(prefix + "/")
     return fnmatch.fnmatchcase(candidate, rule)
+
+
+def matches_protected_pattern(path: str, pattern: str) -> bool:
+    if normalize_repo_path(path).lower() == ".env.example":
+        return False
+    return matches_path_pattern(path, pattern)
 
 
 def validate_git(
@@ -287,6 +311,103 @@ def validate_git(
         )
         if protected:
             findings.error("protected paths are tracked by Git: " + ", ".join(protected))
+
+
+def current_branch(project: Path) -> str | None:
+    """The checked-out branch, or None when Git cannot answer or HEAD is detached."""
+    result = run_git(project, "rev-parse", "--abbrev-ref", "HEAD")
+    if result is None or result.returncode != 0:
+        return None
+    name = result.stdout.strip()
+    return None if not name or name == "HEAD" else name
+
+
+COORDINATION_PREFIX = "docs/ai/"
+
+
+def changed_paths(
+    project: Path, base_ref: str | None, findings: Findings
+) -> list[str] | None:
+    """Repo-relative paths changed against ``base_ref``, plus uncommitted and untracked.
+
+    Returns None when there is no resolvable baseline — a fresh repository, or a base
+    branch that does not exist yet — because then every file is new and the gate would
+    report the whole project as out of scope. The coordination tree is always excluded:
+    state, cards, and config must change on every task.
+    """
+    ref = base_ref or ""
+    if ref:
+        check = run_git(project, "rev-parse", "--verify", "--quiet", ref)
+        if check is None or check.returncode != 0:
+            return None
+    else:
+        ref = "HEAD"
+
+    collected: set[str] = set()
+    diff_result = run_git(project, "diff", "--name-only", ref)
+    if diff_result is None or diff_result.returncode != 0:
+        findings.warn(f"scope check: cannot diff against {ref!r}")
+        return None
+    collected.update(
+        line.strip() for line in diff_result.stdout.splitlines() if line.strip()
+    )
+    untracked_result = run_git(project, "ls-files", "--others", "--exclude-standard")
+    if untracked_result is not None and untracked_result.returncode == 0:
+        collected.update(
+            line.strip() for line in untracked_result.stdout.splitlines() if line.strip()
+        )
+    return sorted(
+        path
+        for path in collected
+        if not normalize_repo_path(path).startswith(COORDINATION_PREFIX)
+    )
+
+
+def validate_scope(
+    project: Path,
+    label: str,
+    base_branch: str,
+    allowed: list[str],
+    forbidden: list[str],
+    findings: Findings,
+) -> None:
+    """Compare the changes actually present against the card's declared scope bounds."""
+    if not allowed and not forbidden:
+        return
+    paths = changed_paths(project, base_branch, findings)
+    if paths is None:
+        return
+    for path in paths:
+        if any(matches_path_pattern(path, rule) for rule in forbidden):
+            findings.error(f"{label}: change touches forbidden path {path}")
+        elif allowed and not any(matches_path_pattern(path, rule) for rule in allowed):
+            findings.warn(f"{label}: change outside allowed_paths: {path}")
+
+
+COMMAND_HINT = re.compile(
+    r"```"
+    r"|`[^`]*\b(?:python|pytest|unittest|npm|pnpm|yarn|node|npx|git|"
+    r"cargo|go|dotnet|make|tox|nox|test)\b[^`]*`",
+    re.IGNORECASE,
+)
+FAILURE_MARKER = re.compile(
+    r"\b(?:fail|failed|failing|failure|error|errors|assert|assertion|traceback|"
+    r"nonzero|non-zero|exit\s*code|red)\b",
+    re.IGNORECASE,
+)
+
+
+def has_recorded_command(text: str) -> bool:
+    """True when a section shows a command rather than only a claim about one."""
+    return bool(COMMAND_HINT.search(text))
+
+
+def has_red_evidence(body: str) -> bool:
+    """A recorded Red step: the section shows a command and a failing observation."""
+    if not meaningful_section(body, "Red Evidence"):
+        return False
+    section = section_body(body, "Red Evidence") or ""
+    return bool(has_recorded_command(section) and FAILURE_MARKER.search(section))
 
 
 def safe_relative_path(project: Path, value: Any) -> Path | None:
@@ -383,7 +504,7 @@ def validate_task(
     if REQUIRED_TASK_FIELDS - data.keys():
         return data, body
 
-    if data["schema_version"] != "project-dev-task/v1":
+    if data["schema_version"] not in TASK_SCHEMA_VERSIONS:
         findings.error(f"{label}: unsupported schema_version {data['schema_version']!r}")
 
     task_id = str(data["task_id"])
@@ -480,6 +601,23 @@ def validate_task(
             findings.error(f"{label}: done task requires meaningful Delivery Evidence")
         if not meaningful_section(body, "Remaining Risks"):
             findings.error(f"{label}: done task requires a Remaining Risks assessment")
+
+        # A boolean is a claim; these bind it to something the card actually shows.
+        # Only v2 cards opt into this, so historical v1 records keep their original
+        # meaning instead of being retroactively judged against a later rule.
+        if data["schema_version"] == EVIDENCE_BOUND_SCHEMA:
+            if data["checks_complete"] is True and not has_recorded_command(
+                section_body(body, "Delivery Evidence") or ""
+            ):
+                findings.warn(
+                    f"{label}: checks_complete is true but Delivery Evidence records "
+                    "no command"
+                )
+            if data["tdd_red_verified"] is True and not has_red_evidence(body):
+                findings.warn(
+                    f"{label}: tdd_red_verified is true but no Red Evidence section "
+                    "records a focused command and its failing result"
+                )
 
         governed = bool(impacts) and impacts != ["none"]
         if config["design_sync"] == "always":
@@ -686,10 +824,154 @@ def validate_project(project: Path) -> Findings:
                 + (", ".join(active_cards) if active_cards else "none")
             )
 
+    # Reconcile the recorded branch with the one actually checked out. A card still
+    # `ready` may name a branch that does not exist yet, so only its state comparison
+    # is relaxed; STATE.md's own branch claim is always a statement of fact. An unborn
+    # HEAD (fresh repository) or a detached HEAD has no branch to reconcile against.
+    actual_branch = current_branch(project)
+    if actual_branch is not None:
+        if git_branch != actual_branch:
+            message = (
+                f"docs/ai/STATE.md: git_branch {git_branch!r} does not match the "
+                f"checked-out branch {actual_branch!r}"
+            )
+            if active_task in {"none", "inline"}:
+                findings.warn(message)
+            else:
+                findings.error(message)
+        if active_task not in {"none", "inline"} and active_task in tasks:
+            active_card = tasks[active_task]
+            card_branch = str(active_card.get("branch"))
+            if active_card.get("status") != "ready" and card_branch != actual_branch:
+                findings.error(
+                    f"{active_task}.md: branch {card_branch!r} does not match the "
+                    f"checked-out branch {actual_branch!r}"
+                )
+
+    # Compare the changes genuinely present against the active card's declared scope.
+    # This runs for a `done` card too: completion is exactly when the declared bounds
+    # matter most, and a merged branch simply produces an empty diff.
+    if active_task not in {"none", "inline"} and active_task in tasks:
+        active_card = tasks[active_task]
+        allowed_rules = active_card.get("allowed_paths")
+        forbidden_rules = active_card.get("forbidden_paths")
+        validate_scope(
+            project,
+            f"{active_task}.md",
+            str(active_card.get("base_branch") or default_branch),
+            [str(rule) for rule in allowed_rules]
+            if isinstance(allowed_rules, list)
+            else [],
+            [str(rule) for rule in forbidden_rules]
+            if isinstance(forbidden_rules, list)
+            else [],
+            findings,
+        )
+
     if not task_paths and active_task != "inline":
         findings.warn("no task cards found under docs/ai/tasks")
 
     return findings
+
+
+def brief(project: Path) -> str:
+    """A compact orientation digest for a session that is starting fresh.
+
+    Reads the same files through the same parsers as validation, so the digest cannot
+    disagree with what the checker enforces.
+    """
+    out: list[str] = []
+    config_result = validate_config(
+        project, project / "docs" / "ai" / "PROJECT.md", Findings()
+    )
+    if config_result is None:
+        return "cannot build brief: docs/ai/PROJECT.md is missing or invalid"
+    config, _design_text, default_branch = config_result
+    out.append(f"project    {config['project']}  ({config['project_type']})")
+    out.append(f"design     {config['design_document']}")
+    out.append(
+        "policy     workflow={0} tdd={1} design_sync={2} default_branch={3}".format(
+            config.get("workflow_policy", "adaptive"),
+            config["tdd_policy"],
+            config["design_sync"],
+            default_branch,
+        )
+    )
+
+    try:
+        state, state_body = read_frontmatter(project / "docs" / "ai" / "STATE.md")
+    except (OSError, UnicodeError, ValueError) as exc:
+        out.append(f"state      unreadable: {exc}")
+        return "\n".join(out)
+
+    active_task = str(state.get("active_task", "none"))
+    out.append(
+        f"state      active_task={active_task} status={state.get('status')} "
+        f"mode={state.get('workflow_mode', '-')} stage={state.get('stage', '-')}"
+    )
+    declared = str(state.get("git_branch", "?"))
+    actual = current_branch(project)
+    flag = "" if actual is None or actual == declared else "   <-- MISMATCH"
+    out.append(f"branch     declared={declared} actual={actual or 'unknown'}{flag}")
+
+    if active_task == "inline":
+        outcome = section_body(state_body, "Current Outcome")
+        if outcome:
+            out.append("outcome    " + " ".join(outcome.split())[:280])
+    elif active_task != "none":
+        card_path = project / "docs" / "ai" / "tasks" / f"{active_task}.md"
+        card: dict[str, Any] = {}
+        card_body = ""
+        if card_path.is_file():
+            try:
+                card, card_body = read_frontmatter(card_path)
+            except (OSError, UnicodeError, ValueError):
+                pass
+        out.append(
+            f"task       {active_task} [{card.get('status', 'missing')}] "
+            f"{card.get('title', '')}"
+        )
+        out.append(
+            "  delivery workflow={0} test={1} branch={2} base={3}".format(
+                card.get("workflow_mode", "-"),
+                card.get("test_mode", "-"),
+                card.get("branch", "-"),
+                card.get("base_branch", "-"),
+            )
+        )
+        out.append(f"  scope    allowed={card.get('allowed_paths', [])}")
+        out.append(f"           forbid={card.get('forbidden_paths', [])}")
+        goal = section_body(card_body, "Goal")
+        if goal:
+            out.append("  goal     " + " ".join(goal.split())[:240])
+        next_action = section_body(card_body, "Next Safe Action")
+        if next_action:
+            out.append("  next     " + " ".join(next_action.split())[:200])
+
+    for heading, tag in (("Blockers", "blockers"), ("Next Tasks", "next")):
+        section = section_body(state_body, heading)
+        if section:
+            flat = "; ".join(
+                " ".join(line.split()) for line in section.splitlines() if line.strip()
+            )
+            out.append(f"{tag:<10} {flat[:260]}")
+    baseline = section_body(state_body, "Verification Baseline")
+    if baseline:
+        flat = "; ".join(
+            " ".join(line.split()) for line in baseline.splitlines() if line.strip()
+        )
+        out.append(f"{'verified':<10} {flat[:260]}")
+
+    recent = run_git(project, "log", "--oneline", "-3")
+    if recent is not None and recent.returncode == 0:
+        commits = [line for line in recent.stdout.splitlines() if line.strip()]
+        if commits:
+            out.append("recent     " + " | ".join(commits))
+    worktree = run_git(project, "status", "--porcelain")
+    if worktree is not None and worktree.returncode == 0:
+        dirty = [line for line in worktree.stdout.splitlines() if line.strip()]
+        out.append(f"worktree   {len(dirty)} uncommitted change(s)")
+    return "\n".join(out)
 
 
 def main() -> int:
@@ -707,9 +989,16 @@ def main() -> int:
         action="store_true",
         help="Treat warnings as validation failures",
     )
+    parser.add_argument(
+        "--brief",
+        action="store_true",
+        help="Print a compact orientation digest before the findings",
+    )
     args = parser.parse_args()
 
     project = args.project.resolve()
+    if args.brief:
+        print(brief(project))
     findings = validate_project(project)
     for item in findings.items:
         print(f"[{item.level}] {item.message}")

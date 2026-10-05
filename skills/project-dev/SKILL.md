@@ -24,16 +24,16 @@ Conversation history is not project state. Preserve unrelated user changes and r
 
 1. Find the project root and read applicable `AGENTS.md` instructions.
 2. Inspect the current Git branch and worktree.
-3. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md`.
+3. Run the recovery digest rather than reading the coordination files in full: `python <skill-dir>/scripts/check_project_state.py --project <repo> --brief`. It prints project policy, the active task and its scope, the declared versus actual branch, blockers, and the next safe action. Read `docs/ai/PROJECT.md` and `docs/ai/STATE.md` in full only when the digest is not enough.
 4. If coordination files are missing, classify the project and read [references/initialization.md](references/initialization.md).
 5. If state points to `inline`, recover from its outcome, handoff, branch, and worktree diff. If it points to a task ID, read only that card, its design references, and relevant implementation files.
-6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check.
+6. Run the state checker immediately only during initialization, recovery, strict work, or when evidence disagrees. Routine clean work does not need a ceremonial pre-check. Execute it — never read it: `python <skill-dir>/scripts/check_project_state.py --project <repo> --strict`, where `<skill-dir>` is this skill's own directory (the one holding this `SKILL.md`). The exit code is the verdict and a passing run prints a single line. The checker reconciles records with the repository, not just with each other: `git_branch` must match the checked-out branch, changes must stay inside the active card's `allowed_paths` and outside `forbidden_paths`, and completed work must show the commands and Red evidence it claims. Record scope and evidence truthfully rather than approximately.
 
 Do not read all design history, completed cards, raw data, or unrelated modules by default.
 
 ## Choose Workflow Rigor
 
-Read [references/workflow-modes.md](references/workflow-modes.md) once when classifying a new outcome. Use the lightest safe mode and escalate when scope or risk grows.
+Classify the outcome from the summary below. Read [references/workflow-modes.md](references/workflow-modes.md) only when selecting `strict`, when a mode decision is contested, or when project policy overrides the default. Use the lightest safe mode and escalate when scope or risk grows.
 
 - **Fast**: a low-risk, narrow change expected to finish in one session. Record it inline in `STATE.md`; do not create a task card or task branch.
 - **Standard**: the default for ordinary features and fixes. Use one compact card, one short branch, focused checks, and one completion update.
@@ -55,7 +55,7 @@ Before editing, confirm the requested outcome and protected boundaries. Then fol
 
 For standard or strict work, create a card from [assets/task-template.md](assets/task-template.md). Record `workflow_mode`, test mode, a concrete test reason, and an explicit `design_sync_required` decision with its reason. Keep future cards `planned` and only one active delivery task.
 
-Read [references/testing-strategy.md](references/testing-strategy.md) when executable behavior changes. Use `$tdd-workflow` only for `tdd` or the test-first portion of `mixed`; ordinary work does not gain value from performative Red-Green-Refactor.
+Read [references/testing-strategy.md](references/testing-strategy.md) when executable behavior changes. When none did — documentation, version metadata, release notes, packaging, CI or release configuration, task and state files — use `test_mode: none`, verify what actually changed (artifact contents, checksums, tag provenance, links, rendering), and cite the last verified run instead of repeating it: a re-run on unchanged inputs cannot fail differently. Use `$tdd-workflow` only for `tdd` or the test-first portion of `mixed`; ordinary work does not gain value from performative Red-Green-Refactor.
 
 Read [references/git-workflow.md](references/git-workflow.md) only before initialization, branch or commit decisions, synchronization, integration, conflict recovery, or cleanup.
 
@@ -72,8 +72,8 @@ If fast work expands, becomes risky, or will span multiple sessions, convert `in
 A change is complete when observable acceptance passes, required checks pass, required design synchronization is done, and no blocker remains.
 
 - Fast: reset state to `active_task: none`, `status: idle`, `workflow_mode: none`; commit the intentional change on the permitted current branch.
-- Standard: update card and state once, run the checker, commit the verified task, merge the short branch, and follow push policy.
-- Strict: run all declared gates and integration checks before completion or external delivery.
+- Standard: update card and state once, run the state checker (`--strict`), commit the verified task, merge the short branch, and follow push policy.
+- Strict: run the checks the card declares before completion or external delivery — at the depth the actual risk justifies, not the widest set available.
 
 Do not start the next task automatically. Report the workflow mode, outcome, branch/commit, checks, design sync decision, remote status, residual risk, and next safe action in a concise handoff.
 
